@@ -19,6 +19,7 @@ $(OUT_FILE): $(IN_FILE) $(CFILES) $(HFILES)
 
 run: $(OUT_FILE)
 	./$(OUT_FILE)
+	open ./assets/outputs/output.png
 
 clean:
 	rm -f $(OUT_FILE) *.o *.out

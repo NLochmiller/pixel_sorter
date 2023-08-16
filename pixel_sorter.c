@@ -6,7 +6,6 @@
 
 #include "colorConversion.h"
 
-
 void printArray(Uint8* arr, int len){
     printf("[");
     for(int i = 0; i < len-1; i++){
@@ -78,7 +77,7 @@ void surfaceCalculateValues(double* values, unsigned long length,
                             SDL_Surface* imageIn,
                             double (*calcFunc)(double, double, double)){
     Uint32* pixels = imageIn->pixels;
-    
+
     for (unsigned long i = 0; i < length; i++){
         Uint8 r, g, b, a;
         double R, G, B;
@@ -98,7 +97,7 @@ void calculateContrastMask(double* doubleValues, bool* output,
                            double conMin, double conMax){
     // For each pixel if conMin <= values <= conMax, set true else false
     for (unsigned long i = 0; i < numPixels; i++){
-        if (doubleValues[i] <= conMin && doubleValues[i] >= conMax){
+        if (doubleValues[i] >= conMin && doubleValues[i] <= conMax){
             output[i] = true;
         } else {
             output[i] = false;
@@ -115,17 +114,17 @@ void convertFromDoublesToInts(double* doubleValues, Uint8* values,
 }
 
 void sortNPixels(Uint32* inPixels, Uint32* outPixels, unsigned long n,
-                 Uint8* values){    
-   
+                 Uint8* values){
+
     unsigned long countLen = UINT8_MAX+1;
     // Count will store the count of each number
     unsigned long* count = (unsigned long*) calloc(countLen,
                                                    sizeof(unsigned long));
     unsigned long i;
-    
+
     // Store count of each value
     for (i = 0; i < n; ++i){
-        ++count[((int)values[i])];
+        ++count[values[i]];
     }
 
     // Change count[i] so that count[i] now contains actual
@@ -139,7 +138,7 @@ void sortNPixels(Uint32* inPixels, Uint32* outPixels, unsigned long n,
     // so if pixel 1 and 2 have the same value, they get put in as 1,2 not 2,1
 
     // unstable version for (unsigned long i = 0; i < n; ++i){
-   
+
     // This would normally have i >= 0, but this will underflow to ULONG_MAX
     // and thus be an infinite loop, instead just have one be outside the loop
     for (unsigned long i = n-1; i > 0; i--){
@@ -150,7 +149,7 @@ void sortNPixels(Uint32* inPixels, Uint32* outPixels, unsigned long n,
     // Do the final placement, where i = 0
     outPixels[count[values[0]] - 1] = inPixels[0];
     count[values[0]]--;
-    
+
 
     free(count);
 }
@@ -165,22 +164,48 @@ SDL_Surface* sortPixels(SDL_Surface* in, SDL_Surface* out, Uint8* values,
     Uint32* outPixels = out->pixels;
 
     // Now do counting sort (Modified to output to a surface)
-    for(int i = 0; i < in->h; i++){
-               
-        unsigned long offset = i * in->w;
+    for(int y = 0; y < in->h; y++){
+        unsigned long lineStart = y * in->w;
+        unsigned long spanStart = 0;
+        bool lastMask = false;
+        for(unsigned long x = 0; x < in->w; x++){
+            unsigned long offset = lineStart + x;
+            // At the start of the span, mark start
+            if ( valuesMask[offset] == true && lastMask == false ){
+                spanStart = x;
+            }
 
-        sortNPixels(inPixels + offset, outPixels + offset, in->w,
-                    values + offset);
+            // Not part of a span, copy this pixel directly
+            if ( valuesMask[offset] == false ){
+                outPixels[offset] = inPixels[offset];
+            }
+
+            // At the end of the span or the end of the line which is in a span
+            if ( (valuesMask[offset] == false && lastMask == true)
+                 || ( x == in->w-1 && valuesMask[offset] == true ) ){
+                unsigned long n = x - spanStart + 1;
+                unsigned long spanOffset = spanStart + lineStart;
+
+                sortNPixels(inPixels + spanOffset, outPixels + spanOffset,
+                            n, values + spanOffset);
+            }
+
+            lastMask = valuesMask[offset];
+        }
     }
-    
+
     // If we were putting the ints back in out, we would do that
     return out;
 }
 
 
 int main(int argc, char** argv){
-    const char* inputPath = "assets/mountain.png";
-    char* outputPath = "assets/output.png";
+    const char* inputPath = "assets/eye.jpg";
+    char* outputPath = "assets/outputs/output.png";
+    double (*calcFunc)(double, double, double) = &calcHue;
+    double conMin = 0;
+    double conMax = 0.8;
+
 
     // Attempt to initialize graphics system
     if (SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -232,12 +257,10 @@ int main(int argc, char** argv){
     Uint8* values = (Uint8*) calloc(numPixels, sizeof(Uint8));
 
     // Fill out the values
-    surfaceCalculateValues(doubleValues, numPixels, imageIn, &calcValue);
+    surfaceCalculateValues(doubleValues, numPixels, imageIn, calcFunc);
     convertFromDoublesToInts(doubleValues, values, numPixels);
 
     // Get the contrast mask
-    double conMin = 0;
-    double conMax = 1;
     bool* valuesMask =(bool*) calloc(numPixels, sizeof(bool));
     calculateContrastMask(doubleValues, valuesMask, numPixels, conMin, conMax);
 
