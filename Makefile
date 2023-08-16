@@ -7,11 +7,11 @@ CC = gcc
 # Compiler flags
 CFLAGS := -g -Wall
 # Needed for linking libraries, such as -lm for math.h for c
-LINKS :=  `sdl2-config --libs --cflags` -lm
+LINKS :=  `sdl2-config --libs --cflags` -lSDL2_image -lm
 
 # The .c files we want to use (HELPER FUNCTIONS)
-CFILES :=
-HFILES :=
+CFILES := colorConversion.c
+HFILES := colorConversion.h
 
 # cc flags output input *.h *.c links
 $(OUT_FILE): $(IN_FILE) $(CFILES) $(HFILES)
