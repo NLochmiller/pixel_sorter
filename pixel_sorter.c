@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdbool.h>
-
+#include <limits.h>
 #include <SDL.h>
 #include <SDL_image.h>
 
 #include "colorConversion.h"
+
 
 void printArray(Uint8* arr, int len){
     printf("[");
@@ -14,6 +15,15 @@ void printArray(Uint8* arr, int len){
     printf("%3.1d]", arr[len-1]);
 }
 
+void printCount(unsigned long* count, int len){
+    printf("Count: [");
+    for(int i = 0; i < len-1; i++){
+        printf("%ld, ", count[i]);
+    }
+    printf("%ld]\n", count[len-1]);
+
+}
+
 // This is here for reference
 // Counting sort
 // Sorts the first n ints of arr and puts them in out
@@ -21,20 +31,17 @@ void printArray(Uint8* arr, int len){
 // To make it work with 0, must add 1 anytime arr[i] is called, except when
 // writing its value to output
 void countingSort(Uint8* arr, Uint8* out, int length, int n){
-
     // Count will store the count of each number
     unsigned long* count = (unsigned long*) calloc(UINT8_MAX+2,
                                                    sizeof(unsigned long));
-    // memset(count, 0, sizeof(count));
     int i = 0;
-
-    // Store count of each character
+    // Store count of each value
     for (i = 0; i < length; ++i){
         ++count[arr[i]+1];
     }
 
     // Change count[i] so that count[i] now contains actual
-    // position of this character in output array
+    // position of this value in output surface
     for (i = 1; i <= UINT8_MAX; ++i){
         count[i] += count[i-1];
     }
@@ -45,21 +52,23 @@ void countingSort(Uint8* arr, Uint8* out, int length, int n){
         --count[arr[i]+1];
     }
 
+    free(count);
+
     // If we were putting the ints back in out, we would do that
 }
 
 
 // Maps [0,255] to [0,1]
 double convert255to1(Uint8 n){
-    return n/255.0;
+    return (0.0+n)/255.0;
 }
 
 // Convert rgb from [0,255] to [0,1]
-void convertRGBfrom255to1(Uint8 R, Uint8 G, Uint8 B,
-                          double* r, double* g, double* b){
-    *r = convert255to1(R);
-    *g = convert255to1(G);
-    *b = convert255to1(B);
+void convertRGBfrom255to1(Uint8 r, Uint8 g, Uint8 b,
+                          double* R, double* G, double* B){
+    *R = convert255to1(r);
+    *G = convert255to1(g);
+    *B = convert255to1(b);
 }
 
 
@@ -68,12 +77,13 @@ void convertRGBfrom255to1(Uint8 R, Uint8 G, Uint8 B,
 void surfaceCalculateValues(double* values, unsigned long length,
                             SDL_Surface* imageIn,
                             double (*calcFunc)(double, double, double)){
-    Uint8* pixels = imageIn->pixels;
-    Uint8 r, g, b;
-    double R, G, B;
+    Uint32* pixels = imageIn->pixels;
     
     for (unsigned long i = 0; i < length; i++){
-        SDL_GetRGB(pixels[i], imageIn->format, &r, &g, &b);
+        Uint8 r, g, b, a;
+        double R, G, B;
+
+        SDL_GetRGBA(pixels[i], imageIn->format, &r, &g, &b, &a);
 
         // Convert from Uint8 to doubles
         convertRGBfrom255to1(r, g, b, &R, &G, &B);
@@ -104,28 +114,72 @@ void convertFromDoublesToInts(double* doubleValues, Uint8* values,
     }
 }
 
+void sortNPixels(Uint32* inPixels, Uint32* outPixels, unsigned long n,
+                 Uint8* values){    
+   
+    unsigned long countLen = UINT8_MAX+1;
+    // Count will store the count of each number
+    unsigned long* count = (unsigned long*) calloc(countLen,
+                                                   sizeof(unsigned long));
+    unsigned long i;
+    
+    // Store count of each value
+    for (i = 0; i < n; ++i){
+        ++count[((int)values[i])];
+    }
+
+    // Change count[i] so that count[i] now contains actual
+    // position of this value in output surface
+    for (i = 1; i <= countLen; ++i){
+        count[i] += count[i-1];
+    }
+
+    // Put the pixels where they should go
+    // We want this to be stable to keep relative order of pixels the same
+    // so if pixel 1 and 2 have the same value, they get put in as 1,2 not 2,1
+
+    // unstable version for (unsigned long i = 0; i < n; ++i){
+   
+    // This would normally have i >= 0, but this will underflow to ULONG_MAX
+    // and thus be an infinite loop, instead just have one be outside the loop
+    for (unsigned long i = n-1; i > 0; i--){
+        outPixels[count[values[i]] - 1] = inPixels[i];
+        count[values[i]]--;
+    }
+
+    // Do the final placement, where i = 0
+    outPixels[count[values[0]] - 1] = inPixels[0];
+    count[values[0]]--;
+    
+
+    free(count);
+}
+
 // Sort the pixels based on the masked values
 SDL_Surface* sortPixels(SDL_Surface* in, SDL_Surface* out, Uint8* values,
                         bool* valuesMask, unsigned long numPixels){
-    // If no output surface exists, create one with the same format as in
     // Having the same format allows for copying without having to change
     // their format and thus speed :)
-    if (out == NULL){
-        out = SDL_CreateRGBSurfaceWithFormat(0, in->w, in->h, 8,
-                                             in->format->format);
-        if (out == NULL){
-            fprintf(stderr, "Error creating output: %s\n", SDL_GetError());
-            exit(-4);
-        }
-    }
 
-    // Now do counting sort!
+    Uint32* inPixels = in->pixels;
+    Uint32* outPixels = out->pixels;
+
+    // Now do counting sort (Modified to output to a surface)
+    for(int i = 0; i < in->h; i++){
+               
+        unsigned long offset = i * in->w;
+
+        sortNPixels(inPixels + offset, outPixels + offset, in->w,
+                    values + offset);
+    }
+    
+    // If we were putting the ints back in out, we would do that
     return out;
 }
 
 
 int main(int argc, char** argv){
-    const char* inputPath = "assets/red_reverse_sorted.png";
+    const char* inputPath = "assets/mountain.png";
     char* outputPath = "assets/output.png";
 
     // Attempt to initialize graphics system
@@ -135,12 +189,14 @@ int main(int argc, char** argv){
     }
 
     // Attempt to initialize the image system
-    if (IMG_Init(0) != 0){
+    if (IMG_Init(IMG_INIT_PNG) == 0){
         fprintf(stderr, "Error initializing SDL_image: %s\n", SDL_GetError());
+        return -2;
     }
 
     // Open the image
     SDL_Surface* imageIn = IMG_Load(inputPath);
+
     if (imageIn == NULL){
         fprintf(stderr, "Error loading input image.\n");
         IMG_Quit();
@@ -148,26 +204,47 @@ int main(int argc, char** argv){
         return -2;
     }
 
+    // Create the output image
+    SDL_Surface* imageOut =
+        SDL_CreateRGBSurfaceWithFormat(0, imageIn->w, imageIn->h, 8,
+                                       SDL_PIXELFORMAT_RGBA32);
+    if (imageIn == NULL){
+        fprintf(stderr, "Error creating output surface: %s\n", SDL_GetError());
+        IMG_Quit();
+        SDL_Quit();
+        return -2;
+    }
+
+    // Convert imageIn to have the same formatting as imageOut
+    // Doing this ensures that in and out have the same formatting, making
+    // doing things faster
+    SDL_Surface* oldSurface = imageIn;
+    imageIn = SDL_ConvertSurface(imageIn, imageOut->format, 0);
+    SDL_FreeSurface(oldSurface);
+    if (imageIn == NULL){
+        fprintf(stderr, "Error converting input surface: %s\n", SDL_GetError());
+        return -2;
+    }
+
     // Create the value array
     unsigned long numPixels = imageIn->w * imageIn->h;
     double* doubleValues = (double*) calloc(numPixels, sizeof(double));
     Uint8* values = (Uint8*) calloc(numPixels, sizeof(Uint8));
-    
+
     // Fill out the values
     surfaceCalculateValues(doubleValues, numPixels, imageIn, &calcValue);
     convertFromDoublesToInts(doubleValues, values, numPixels);
-    
+
     // Get the contrast mask
     double conMin = 0;
     double conMax = 1;
     bool* valuesMask =(bool*) calloc(numPixels, sizeof(bool));
     calculateContrastMask(doubleValues, valuesMask, numPixels, conMin, conMax);
 
-    
-    // Sort!
-    SDL_Surface* imageOut = sortPixels(imageIn, NULL, values, valuesMask,
-                                       numPixels);
 
+    // Sort!
+    sortPixels(imageIn, imageOut, values, valuesMask,
+                                       numPixels);
 
     // Save the image
     int result = IMG_SavePNG(imageOut, outputPath);
