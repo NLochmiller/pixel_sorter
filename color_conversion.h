@@ -1,7 +1,7 @@
-#ifndef COLORCONVERSION_H
-#define COLORCONVERSION_H
+#ifndef COLOR_CONVERSION_H
+#define COLOR_CONVERSION_H
 
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 // Just red
 double calcRed(double r, double g, double b);
@@ -36,4 +36,4 @@ double calcSaturation_HSL(double r, double g, double b);
 // Lightness (HSL)
 double calcLightness(double r, double g, double b);
 
-#endif
+#endif /* COLOR_CONVERSION_H */

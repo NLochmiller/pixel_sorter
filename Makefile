@@ -10,8 +10,8 @@ CFLAGS := -g -Wall
 LINKS :=  `sdl2-config --libs --cflags` -lSDL2_image -lm
 
 # The .c files we want to use (HELPER FUNCTIONS)
-CFILES := colorConversion.c
-HFILES := colorConversion.h
+CFILES := color_conversion.c surface_sorting.c
+HFILES := color_conversion.h surface_sorting.h
 
 # cc flags output input *.h *.c links
 $(OUT_FILE): $(IN_FILE) $(CFILES) $(HFILES)
@@ -19,7 +19,7 @@ $(OUT_FILE): $(IN_FILE) $(CFILES) $(HFILES)
 
 run: $(OUT_FILE)
 	./$(OUT_FILE)
-	open ./assets/outputs/output.png
+	open ./output.png
 
 clean:
-	rm -f $(OUT_FILE) *.o *.out
+	rm -f $(OUT_FILE) *.o *.out output.png
