@@ -4,9 +4,11 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 
+#include "constants.h"
 #include "color_conversion.h"
 #include "surface_sorting.h"
 
+/*
 void printArray(Uint8* arr, int len){
     printf("[");
     for(int i = 0; i < len-1; i++){
@@ -56,7 +58,7 @@ void countingSort(Uint8* arr, Uint8* out, int length, int n){
 
     // If we were putting the ints back in out, we would do that
 }
-
+*/
 
 // Maps [0,255] to [0,1]
 double convert255to1(Uint8 n){
@@ -116,12 +118,12 @@ void convertFromDoublesToInts(double* doubleValues, Uint8* values,
 
 
 int main(int argc, char** argv){
-    const char* inputPath = "assets/whatsThis.png";
+    const char* inputPath = "assets/mountain.png";
     char* outputPath = "output.png";
     double (*calcFunc)(double, double, double) = &calcValue;
-    double conMin = 0.4;
-    double conMax = 0.8;
-
+    double conMin = 0;
+    double conMax = 0.3;
+    enum direction direction = up;
 
     // Attempt to initialize graphics system
     if (SDL_Init(SDL_INIT_VIDEO) != 0){
@@ -182,8 +184,7 @@ int main(int argc, char** argv){
 
 
     // Sort!
-    sortPixels(imageIn, imageOut, values, valuesMask,
-                                       numPixels);
+    sortPixels(imageIn, imageOut, values, valuesMask, numPixels, direction);
 
     // Save the image
     int result = IMG_SavePNG(imageOut, outputPath);
