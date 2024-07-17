@@ -1,7 +1,8 @@
 pixel_sorter
 *output.png
 core*
-assets/*
+*.o
+imgui.ini
 \#*#
 *~
 .#*
