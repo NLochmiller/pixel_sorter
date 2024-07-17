@@ -1,5 +1,5 @@
 CXX_VERSION=17
-OUTPUT = custom_imgui
+OUTPUT = pixel_sorter
 # Normal sources
 SOURCES = main.cpp
 
