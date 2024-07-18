@@ -14,9 +14,36 @@
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
 #endif
 
+// Image types that are supported
+#ifndef SUPPORTED_IMAGE_TYPES
+#define SUPPORTED_IMAGE_TYPES {".png", ".jpg"}
+#endif
+
 // Forward declerations
 void render(SDL_Renderer* renderer);
 int main_window(const ImGuiViewport* viewport);
+
+void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
+                       ImGui::FileBrowser &outputFileDialog) {
+  if (ImGui::BeginMainMenuBar()) {
+    if (ImGui::BeginMenu("File")) {
+      ImGui::Text("ABCD");
+      // File dialogs to select files
+      if (ImGui::MenuItem("Open", "", false)) {
+        inputFileDialog.Open();
+      }
+      if (ImGui::MenuItem("Export as", "", false)) {
+        outputFileDialog.Open();
+      }
+      ImGui::EndMenu();
+    }
+  }
+  ImGui::EndMainMenuBar();
+}
+
+
+
+
 
 
 int main(int, char **) {
@@ -65,6 +92,15 @@ int main(int, char **) {
   ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
   ImGui_ImplSDLRenderer2_Init(renderer);
 
+  // File interactions
+  ImGui::FileBrowser inputFileDialog;
+  ImGui::FileBrowser outputFileDialog;
+  inputFileDialog.SetTitle("Select input image");
+  inputFileDialog.SetTypeFilters(SUPPORTED_IMAGE_TYPES);
+
+  outputFileDialog.SetTitle("Select output image");
+  outputFileDialog.SetTypeFilters(SUPPORTED_IMAGE_TYPES);
+
   bool done = false;
   while (!done) {
     // Poll and handle events (inputs, window resize, etc.)
@@ -86,8 +122,26 @@ int main(int, char **) {
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
     main_window(viewport);
+    handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Rendering
+
+    inputFileDialog.Display();
+    if (inputFileDialog.HasSelected()) {
+      printf("Selected filename %s\n", inputFileDialog.GetSelected().string().c_str());
+      inputFileDialog.ClearSelected();
+    }
+
+    outputFileDialog.Display();
+    if (outputFileDialog.HasSelected()) {
+      printf("Selected filename %s\n", outputFileDialog.GetSelected().string().c_str());
+      outputFileDialog.ClearSelected();
+    }
+
+    
+
+
+    
     render(renderer);
   }
   /* === END OF MAIN LOOP =================================================== */
@@ -116,6 +170,8 @@ void render(SDL_Renderer* renderer) {
   SDL_RenderPresent(renderer);
 }
 
+
+
 // The main window, aka the background window
 // Returns non zero on error
 int main_window(const ImGuiViewport* viewport) {
@@ -135,4 +191,5 @@ int main_window(const ImGuiViewport* viewport) {
 
     return 0;
 }
+
 
