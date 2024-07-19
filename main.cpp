@@ -6,9 +6,7 @@
 
 #include <SDL.h>
 #include <SDL_image.h>
-#include <iostream>
 #include <stdio.h>
-#include <string>
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
