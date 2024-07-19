@@ -53,41 +53,41 @@ double minRGB(double r, double g, double b){
 // Uint8 functionName(Uint8 R, Uint8 G, Uint8 B)
 
 // Just red
-double calcRed(double r, double g, double b){
+double ColCon_Red(double r, double g, double b){
     return r;
 }
 
 // Just green
-double calcGreen(double r, double g, double b){
+double ColCon_Green(double r, double g, double b){
     return g;
 }
 
 // Just blue
-double calcBlue(double r, double g, double b){
+double ColCon_Blue(double r, double g, double b){
     return b;
 }
 
 // The average of r, g, b
-double calcAverage(double r, double g, double b){
+double ColCon_Average(double r, double g, double b){
     return (r + g + b)/3.0;
 }
 
 // Return the value of (R,G,B)
 // V = max(R,G,B)
-double calcValue(double r, double g, double b){  
+double ColCon_Value(double r, double g, double b){  
     // Return the max(r,g,b)
     return maxRGB(r, g, b);
 }
 
 // Return the minimum of (R,G,B)
-double calcMinimum(double r, double g, double b){
+double ColCon_Minimum(double r, double g, double b){
     // Return the min(r,g,b)
     return minRGB(r, g, b);
 }
 
 
 // The range aka chroma
-double calcChroma(double r, double g, double b){
+double ColCon_Chroma(double r, double g, double b){
     // Calculate chroma
     double max = maxRGB(r, g, b);
     double min = minRGB(r, g, b);
@@ -96,7 +96,7 @@ double calcChroma(double r, double g, double b){
     return chroma;
 }
 
-double calcLightness(double r, double g, double b){
+double ColCon_Lightness(double r, double g, double b){
     // Calculate lightness
     double max = maxRGB(r, g, b);
     double min = minRGB(r, g, b);
@@ -105,7 +105,7 @@ double calcLightness(double r, double g, double b){
     return lightness;
 }
 
-double calcHue(double r, double g, double b){
+double ColCon_Hue(double r, double g, double b){
     // Calculate chroma
     double max = maxRGB(r, g, b);
     double min = minRGB(r, g, b);
@@ -128,7 +128,7 @@ double calcHue(double r, double g, double b){
 }
 
 // Saturation (HSV)
-double calcSaturation(double r, double g, double b){
+double ColCon_Saturation(double r, double g, double b){
     // Calculate chroma
     double max = maxRGB(r, g, b);
     double min = minRGB(r, g, b);
@@ -146,7 +146,7 @@ double calcSaturation(double r, double g, double b){
 }
 
 // HSL saturation
-double calcSaturation_HSL(double r, double g, double b){
+double ColCon_Saturation_HSL(double r, double g, double b){
     // Calculate Lightness
     double max = maxRGB(r, g, b);
     double min = minRGB(r, g, b);
