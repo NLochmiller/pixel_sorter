@@ -14,12 +14,13 @@
 
 // Image types that are supported
 #ifndef SUPPORTED_IMAGE_TYPES
-#define SUPPORTED_IMAGE_TYPES {".png", ".jpg"}
+#define SUPPORTED_IMAGE_TYPES                                                  \
+  { ".png", ".jpg" }
 #endif
 
 // Forward declerations
-void render(SDL_Renderer* renderer);
-int main_window(const ImGuiViewport* viewport);
+void render(SDL_Renderer *renderer);
+int main_window(const ImGuiViewport *viewport);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog) {
@@ -39,15 +40,10 @@ void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
   ImGui::EndMainMenuBar();
 }
 
-
-
-
-
-
 int main(int, char **) {
   // Setup SDL
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER)
-      != 0) {
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) !=
+      0) {
     fprintf(stderr, "Error: %s\n", SDL_GetError());
     return -1;
   }
@@ -60,9 +56,9 @@ int main(int, char **) {
   // Create window with SDL_Renderer graphics context
   SDL_WindowFlags window_flags =
       (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-  SDL_Window *window = SDL_CreateWindow(
-      "Pixel Sorter", SDL_WINDOWPOS_CENTERED,
-      SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
+  SDL_Window *window =
+      SDL_CreateWindow("Pixel Sorter", SDL_WINDOWPOS_CENTERED,
+                       SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
   if (window == nullptr) {
     fprintf(stderr, "Error: SDL_CreateWindow(): %s\n", SDL_GetError());
     return -1;
@@ -74,7 +70,7 @@ int main(int, char **) {
     return 0;
   }
 
-    // Setup Dear ImGui context
+  // Setup Dear ImGui context
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGuiIO &io = ImGui::GetIO();
@@ -91,8 +87,26 @@ int main(int, char **) {
   ImGui_ImplSDLRenderer2_Init(renderer);
 
   // File interactions
-  ImGui::FileBrowser inputFileDialog;
-  ImGui::FileBrowser outputFileDialog;
+  /* Input file dialog
+   *   User should be able to select 1 file.
+   *   User should be able to move through directories
+   *   User should not be able to create files or directories
+   *   User should only be able to select existing files
+   *   Errors should not cause failures
+   */
+  ImGui::FileBrowser inputFileDialog(
+      ImGuiFileBrowserFlags_SkipItemsCausingError);
+
+  /* Export file dialog.
+   *   User should be able to select 1 file
+   *   User should be able to move through directories
+   *   User should be able to create directories and 1 file
+   *   Errors should not cause failures
+   */
+  ImGui::FileBrowser outputFileDialog(
+      ImGuiFileBrowserFlags_EnterNewFilename |
+      ImGuiFileBrowserFlags_CreateNewDir |
+      ImGuiFileBrowserFlags_SkipItemsCausingError);
   inputFileDialog.SetTitle("Select input image");
   inputFileDialog.SetTypeFilters(SUPPORTED_IMAGE_TYPES);
 
@@ -126,24 +140,22 @@ int main(int, char **) {
 
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
-      printf("Selected filename %s\n", inputFileDialog.GetSelected().string().c_str());
+      printf("Selected filename %s\n",
+             inputFileDialog.GetSelected().string().c_str());
       inputFileDialog.ClearSelected();
     }
 
     outputFileDialog.Display();
     if (outputFileDialog.HasSelected()) {
-      printf("Selected filename %s\n", outputFileDialog.GetSelected().string().c_str());
+      printf("Selected filename %s\n",
+             outputFileDialog.GetSelected().string().c_str());
       outputFileDialog.ClearSelected();
     }
 
-    
-
-
-    
     render(renderer);
   }
   /* === END OF MAIN LOOP =================================================== */
-  
+
   // Cleanup
   ImGui_ImplSDLRenderer2_Shutdown();
   ImGui_ImplSDL2_Shutdown();
@@ -157,7 +169,7 @@ int main(int, char **) {
 }
 
 // Render the entire window
-void render(SDL_Renderer* renderer) {
+void render(SDL_Renderer *renderer) {
   ImGuiIO &io = ImGui::GetIO();
   ImGui::Render();
   SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x,
@@ -168,26 +180,22 @@ void render(SDL_Renderer* renderer) {
   SDL_RenderPresent(renderer);
 }
 
-
-
 // The main window, aka the background window
 // Returns non zero on error
-int main_window(const ImGuiViewport* viewport) {
-    static ImGuiWindowFlags window_flags = ImGuiWindowFlags_NoCollapse |
-      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoResize |
-      ImGuiWindowFlags_NoTitleBar;
+int main_window(const ImGuiViewport *viewport) {
+  static ImGuiWindowFlags window_flags =
+      ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
+      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
 
-    // Make fullscreen
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
+  // Make fullscreen
+  ImGui::SetNextWindowPos(viewport->WorkPos);
+  ImGui::SetNextWindowSize(viewport->WorkSize);
 
-    if (ImGui::Begin("Main window", NULL, window_flags)) {
-      static bool check = false;
-      ImGui::Checkbox("Test checkbox", &check);
-    }
-    ImGui::End();
+  if (ImGui::Begin("Main window", NULL, window_flags)) {
+    static bool check = false;
+    ImGui::Checkbox("Test checkbox", &check);
+  }
+  ImGui::End();
 
-    return 0;
+  return 0;
 }
-
-
