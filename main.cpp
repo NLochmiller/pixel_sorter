@@ -26,7 +26,7 @@ void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog) {
   if (ImGui::BeginMainMenuBar()) {
     if (ImGui::BeginMenu("File")) {
-      ImGui::Text("ABCD");
+      ImGui::SeparatorText("Image files");
       // File dialogs to select files
       if (ImGui::MenuItem("Open", "", false)) {
         inputFileDialog.Open();
@@ -114,6 +114,7 @@ int main(int, char **) {
   outputFileDialog.SetTypeFilters(SUPPORTED_IMAGE_TYPES);
 
   bool done = false;
+  /* === START OF MAIN LOOP ================================================= */
   while (!done) {
     // Poll and handle events (inputs, window resize, etc.)
     SDL_Event event;
@@ -136,8 +137,7 @@ int main(int, char **) {
     main_window(viewport);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
-    // Rendering
-
+    // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
       printf("Selected filename %s\n",
@@ -145,6 +145,7 @@ int main(int, char **) {
       inputFileDialog.ClearSelected();
     }
 
+    // Process output file dialog
     outputFileDialog.Display();
     if (outputFileDialog.HasSelected()) {
       printf("Selected filename %s\n",
@@ -194,6 +195,9 @@ int main_window(const ImGuiViewport *viewport) {
   if (ImGui::Begin("Main window", NULL, window_flags)) {
     static bool check = false;
     ImGui::Checkbox("Test checkbox", &check);
+
+
+
   }
   ImGui::End();
 
