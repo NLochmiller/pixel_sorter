@@ -1,3 +1,8 @@
+#include "SDL_pixels.h"
+#include "SDL_render.h"
+#include "SDL_stdinc.h"
+#include "SDL_surface.h"
+#include "global.h"
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -7,6 +12,9 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <stdio.h>
+
+// Local includes
+#include "global.h"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
@@ -20,7 +28,7 @@
 
 // Forward declerations
 void render(SDL_Renderer *renderer);
-int main_window(const ImGuiViewport *viewport);
+int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog) {
@@ -134,7 +142,7 @@ int main(int, char **) {
     ImGui::NewFrame();
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    main_window(viewport);
+    main_window(viewport, renderer);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
@@ -181,9 +189,66 @@ void render(SDL_Renderer *renderer) {
   SDL_RenderPresent(renderer);
 }
 
+// For width and height, 0 indicates to use the respective dimension of the
+// surface
+bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
+                    uint width = 0, uint height = 0) {
+  if (surface == NULL) {
+    return false;
+  }
+
+  SDL_Texture *texture_ptr = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture_ptr == NULL) {
+    printf("Bad texture pointer");
+    exit(-2);
+  }
+
+  // Adjust width and height to the images if desired (width or height = 0)
+  if (width == 0) {
+    width = surface->w;
+  }
+  if (height == 0) {
+    height = surface->h;
+  }
+
+  ImGui::Image((void *)texture_ptr, ImVec2(width, height));
+  return true;
+}
+
+void test(SDL_Renderer *renderer) {
+  static bool init = false;
+  int w = 101;
+  int h = 101;
+  static SDL_Surface *img_surface =
+      SDL_CreateRGBSurfaceWithFormat(0, w, h, 8, DEFAULT_PIXEL_FORMAT);
+  // IMG_Load("/home/nloch/Pictures/backgrounds/wallhaven-q6ro3l.jpg");
+
+  if (!init) {
+    if (img_surface == NULL) {
+      printf("BAD SURFACE\n");
+      exit(-1);
+    }
+
+
+    // Fill with white
+    const SDL_Rect rect = {.x = 0, .y = 0, .w = w, .h = h};
+    Uint32 color = SDL_MapRGBA(img_surface->format,  255, 255, 255, 255);
+
+    SDL_FillRect(img_surface, &rect, (Uint32) color);
+
+
+
+    
+    init = true;
+  }
+
+  h = 300;
+  displaySurface(renderer, img_surface, h, h);
+}
+
 // The main window, aka the background window
 // Returns non zero on error
-int main_window(const ImGuiViewport *viewport) {
+int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer) {
   static ImGuiWindowFlags window_flags =
       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
@@ -193,7 +258,6 @@ int main_window(const ImGuiViewport *viewport) {
   ImGui::SetNextWindowSize(viewport->WorkSize);
 
   if (ImGui::Begin("Main window", NULL, window_flags)) {
-
     // Main group
     ImGui::BeginGroup();
     static bool check = false;
@@ -207,6 +271,7 @@ int main_window(const ImGuiViewport *viewport) {
                              1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
+      test(renderer);
     }
     ImGui::EndGroup();
 
