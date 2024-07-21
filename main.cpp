@@ -193,16 +193,31 @@ int main_window(const ImGuiViewport *viewport) {
   ImGui::SetNextWindowSize(viewport->WorkSize);
 
   if (ImGui::Begin("Main window", NULL, window_flags)) {
-    static bool check = false;
-    ImGui::Checkbox("Test checkbox", &check);
 
-    // Set the minimum and maximum percentages of values will be sorted
-    static float min_percent = 25.0;
-    static float max_percent = 75.0;
-    ImGui::DragFloatRange2("Percentage range", &min_percent, &max_percent, 1.0f,
-                           0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
-                           ImGuiSliderFlags_AlwaysClamp);
-    ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
+    // Main group
+    ImGui::BeginGroup();
+    static bool check = false;
+    {
+      ImGui::Checkbox("Test checkbox", &check);
+
+      // Set the minimum and maximum percentages of values will be sorted
+      static float min_percent = 25.0;
+      static float max_percent = 75.0;
+      ImGui::DragFloatRange2("Percentage range", &min_percent, &max_percent,
+                             1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
+                             "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
+      ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
+    }
+    ImGui::EndGroup();
+
+    // This is how to do a vertical layout, just split into 2 groups
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    {
+      ImGui::Text("First item on right");
+      ImGui::Text("Second item on right");
+    }
+    ImGui::EndGroup();
   }
   ImGui::End();
 
