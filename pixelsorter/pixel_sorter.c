@@ -120,7 +120,7 @@ void convertFromDoublesToInts(double* doubleValues, Uint8* values,
 int main(int argc, char** argv){
     const char* inputPath = "assets/mountain.png";
     char* outputPath = "output.png";
-    double (*calcFunc)(double, double, double) = &calcValue;
+    double (*calcFunc)(double, double, double) = &ColCon_Value;
     double conMin = 0;
     double conMax = 0.3;
     enum direction direction = up;
