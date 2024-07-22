@@ -14,6 +14,7 @@
 #include <stdio.h>
 
 // Local includes
+#include "bresenhamsLine_Interpolator.hpp"
 #include "global.h"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
@@ -229,16 +230,27 @@ void test(SDL_Renderer *renderer) {
       exit(-1);
     }
 
-
     // Fill with white
     const SDL_Rect rect = {.x = 0, .y = 0, .w = w, .h = h};
-    Uint32 color = SDL_MapRGBA(img_surface->format,  255, 255, 255, 255);
+    Uint32 color = SDL_MapRGBA(img_surface->format, 255, 255, 255, 255);
 
-    SDL_FillRect(img_surface, &rect, (Uint32) color);
+    SDL_FillRect(img_surface, &rect, (Uint32)color);
 
+    int curX, curY;
+    int sx = 0;
+    int sy = 1;
+    int ex = 6;
+    int ey = 4;
+    int dx = 0;
+    int dy = 0;
+    double slope_error = 0;
 
+    LineInterpolator::init_bresenhams(curX, curY, sx, sy, ex, ey, dx, dy,
+                                      slope_error);
 
-    
+    LineInterpolator::inerpolate_bresenhams(curX, curY, sx, sy, ex, ey, dx, dy,
+                                            slope_error);
+
     init = true;
   }
 
