@@ -44,7 +44,7 @@ bool LineInterpolator::inerpolate_bresenhams(int &currentX, int &currentY,
   }
   slope_error += 2 * dy;
   */
-
+  /* Unmodifed bresenhams
   for (; currentX <= endX; currentX++) {
     printf("(%d, %d)\n", currentX, currentY);
     if (slope_error > 0) {
@@ -53,7 +53,16 @@ bool LineInterpolator::inerpolate_bresenhams(int &currentX, int &currentY,
     }
     slope_error += 2 * dy;
   }
-  return false;
+  */
+
+  if (slope_error > 0) {
+    currentY++;
+    slope_error -= 2 * dx;
+  }
+  slope_error += 2 * dy;
+  currentX++;
+
+  return (currentX <= endX);
 }
 
 void LineInterpolator::init_bresenhams(int &currentX, int &currentY, int startX,

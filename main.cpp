@@ -247,9 +247,10 @@ void test(SDL_Renderer *renderer) {
 
     LineInterpolator::init_bresenhams(curX, curY, sx, sy, ex, ey, dx, dy,
                                       slope_error);
-
-    LineInterpolator::inerpolate_bresenhams(curX, curY, sx, sy, ex, ey, dx, dy,
-                                            slope_error);
+    do {
+       printf("(%d, %d)\n", curX, curY);
+    }    while (LineInterpolator::inerpolate_bresenhams(curX, curY, sx, sy, ex, ey,
+                                                   dx, dy, slope_error));
 
     init = true;
   }
