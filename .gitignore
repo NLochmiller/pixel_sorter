@@ -3,6 +3,7 @@ pixel_sorter
 core*
 *.o
 imgui.ini
+compile_commands.json
 \#*#
 *~
 .#*
