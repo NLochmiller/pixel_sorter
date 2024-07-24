@@ -85,6 +85,43 @@ void LineInterpolator::init_bresenhams(int &currentX, int &currentY, int startX,
   // dy = std::abs(dy);
 }
 
+bresenham_interpolator *LineInterpolator::get_interpolator(int dx, int dy) {
+  if (dx >= 0) {  // Right
+    if (dy >= 0) {  // Up
+      // Goes up and right
+      if (dx >= dy) {
+        return &LineInterpolator::interpolate_bresenhams_O0;
+      } else {
+        return &LineInterpolator::interpolate_bresenhams_O1;
+      }
+    } else { // Down
+      // Goes down and right
+      if (dx >= dy) {
+        return &LineInterpolator::interpolate_bresenhams_O7;
+      } else {
+        return &LineInterpolator::interpolate_bresenhams_O6;
+      }
+    }
+  } else { // Left
+    if (dy >= 0) { // Up
+      // Goes up and left
+      if (dx >= dy) {
+        return &LineInterpolator::interpolate_bresenhams_O3;
+      } else {
+        return &LineInterpolator::interpolate_bresenhams_O2;
+      }
+    } else { // Down
+      // Goes down and left
+      if (dx >= dy) {
+        return &LineInterpolator::interpolate_bresenhams_O4;
+      } else {
+        return &LineInterpolator::interpolate_bresenhams_O5;
+      }
+    }
+    
+  }
+}
+
 // Returns a bresenhams line algorithm interpolator based on angle in degrees
 // Angle must be in range [0, 360)
 bresenham_interpolator *LineInterpolator::get_interpolator(double angle) {

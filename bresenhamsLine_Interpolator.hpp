@@ -39,10 +39,10 @@ public:
   static void init_bresenhams(int &currentX, int &currentY, int startX,
                               int startY, int endX, int endY, int &dx, int &dy,
                               double &slope_error);
+  // Get interpolator for use case
+  static bresenham_interpolator *get_interpolator(int dx, int dy);
+  static bresenham_interpolator *get_interpolator(double angle);
 
-  static bresenham_interpolator* get_interpolator(double angle);
-
-  
   // For each octant.
   static bresenham_interpolator interpolate_bresenhams_O0;
   static bresenham_interpolator interpolate_bresenhams_O1;
