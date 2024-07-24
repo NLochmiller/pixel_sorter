@@ -23,16 +23,6 @@ class LineInterpolator {
 public:
   // Constructor, does nothing since we only have static methods
   LineInterpolator() {}
-  // Interperate along the line using bresenhams line drawing algorithm
-  // returns if finished
-  // currentX and currentY are updated to the next step in the line drawing
-  // algorithm
-  // static bool interpolate_bresenhams(int &currentX, int &currentY, int
-  // startX,
-  //                                    int startY, int endX, int endY, int &dx,
-  //                                    int &dy, double &slope_error);
-
-  static bresenham_interpolator interpolate_bresenhams;
 
   // Initalize variables needed by bresenhams
   // Variables user must supply: startX, startY, endX, endY
@@ -43,6 +33,13 @@ public:
   static bresenham_interpolator *get_interpolator(int dx, int dy);
   static bresenham_interpolator *get_interpolator(double angle);
 
+  /*
+   * A interpolator that acts like NULL, it changes nothing and returns false.
+   * This is intended to be passed when invalid input is given, if code is
+   * correctly setup, the loop with bad input should stop 
+   */
+  static bresenham_interpolator invalid_bresenhams_interpolator;
+  
   // For each octant.
   static bresenham_interpolator interpolate_bresenhams_O0;
   static bresenham_interpolator interpolate_bresenhams_O1;
@@ -52,6 +49,11 @@ public:
   static bresenham_interpolator interpolate_bresenhams_O5;
   static bresenham_interpolator interpolate_bresenhams_O6;
   static bresenham_interpolator interpolate_bresenhams_O7;
+
+    // Interperate along the line using bresenhams line drawing algorithm
+  // returns if finished
+  static bresenham_interpolator interpolate_bresenhams;
+
 
 private:
 };

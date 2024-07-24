@@ -35,41 +35,11 @@
  */
 
 /*
-  Have a function that returns an interpolator, something like get_interpolator
+ * Initalize the variables used in bresenhams line interpolation.
+ * You must provide all variables, the only variables who need to have a value
+ * are startX, startY, endX, and endY, all other variables will be assigned
+ * values when init_bresenhams is called.
  */
-
-bool LineInterpolator::interpolate_bresenhams(int &currentX, int &currentY,
-                                              int startX, int startY, int endX,
-                                              int endY, int &dx, int &dy,
-                                              double &slope_error) {
-  /*
-  if (slope_error > 0) {
-    currentY++;
-    slope_error -= dx;
-  }
-  slope_error += 2 * dy;
-  */
-  /* Unmodifed bresenhams
-  for (; currentX <= endX; currentX++) {
-    printf("(%d, %d)\n", currentX, currentY);
-    if (slope_error > 0) {
-      currentY++;
-      slope_error -= 2 * dx;
-    }
-    slope_error += 2 * dy;
-  }
-  */
-
-  if (slope_error > 0) {
-    currentY++;
-    slope_error -= 2 * dx;
-  }
-  slope_error += 2 * dy;
-  currentX++;
-
-  return (currentX <= endX);
-}
-
 void LineInterpolator::init_bresenhams(int &currentX, int &currentY, int startX,
                                        int startY, int endX, int endY, int &dx,
                                        int &dy, double &slope_error) {
@@ -80,17 +50,27 @@ void LineInterpolator::init_bresenhams(int &currentX, int &currentY, int startX,
   dy = endY - startY;
 
   slope_error = 2 * dy - dx;
-  // Normalize
-  // dx = std::abs(dx);
-  // dy = std::abs(dy);
 }
 
+/*
+ * ┌─────────┐
+ * │         │
+ * │ \  |  / │
+ * │  \2|1/  │
+ * │  3\|/0  │
+ * │ ---*--- │
+ * │  4/|\7  │
+ * │  /5|6\  │
+ * │ /  |  \ │
+ * │         │
+ * └─────────┘
+ */
 bresenham_interpolator *LineInterpolator::get_interpolator(int dx, int dy) {
 
   int abs_dx = std::abs(dx);
   int abs_dy = std::abs(dy);
 
-  if (dx > 0 && dy >= 0) { // Top right quadrent
+  if (dx > 0 && dy >= 0) { // Top right quadrant
     if (abs_dx > abs_dy) {
       printf("0\n");
       return &LineInterpolator::interpolate_bresenhams_O0;
@@ -99,65 +79,35 @@ bresenham_interpolator *LineInterpolator::get_interpolator(int dx, int dy) {
       printf("1\n");
       return &LineInterpolator::interpolate_bresenhams_O1;
     }
-  } else if (dx <= 0 && dy > 0) {
-    if (abs_dx < abs_dy) {
+  } else if (dx <= 0 && dy > 0) { // Top left quadrant
+    if (abs_dx < abs_dy) {        // [90, 135)
       printf("2\n");
       return &LineInterpolator::interpolate_bresenhams_O2;
     } else {
       printf("3\n");
       return &LineInterpolator::interpolate_bresenhams_O3;
     }
+  } else if (dx < 0 && dy <= 0) { // Bottom left quadrant
+    if (abs_dx >= abs_dy) {
+      printf("4\n");
+      return &LineInterpolator::interpolate_bresenhams_O4;
+    } else {
+      printf("5\n");
+      return &LineInterpolator::interpolate_bresenhams_O5;
+    }
+  } else if (dx >= 0 && dy < 0) { // Bottom right quadrent
+    if (abs_dx < abs_dy) {
+      printf("6\n");
+      return &LineInterpolator::interpolate_bresenhams_O6;
+    } else {
+      printf("7\n");
+      return &LineInterpolator::interpolate_bresenhams_O7;
+    }
   }
+  fprintf(stderr, "LineInterpolator::get_interpolator Invalid dx dy (%d, %d)\n",
+          dx, dy);
 
   return &LineInterpolator::interpolate_bresenhams_O0;
-  /*
-  if (dx >= 0) {  // Right
-    if (dy >= 0) {  // Up
-      // Goes up and right
-      if (std::abs(dx) >= std::abs(dy)) {
-        printf("0\n");
-        return &LineInterpolator::interpolate_bresenhams_O0;
-      } else {
-        printf("1\n");
-        return &LineInterpolator::interpolate_bresenhams_O1;
-      }
-    } else { // Down
-      // Goes down and right
-      if (std::abs(dx) >= std::abs(dy)) {
-                printf("7\n");
-        return &LineInterpolator::interpolate_bresenhams_O7;
-      } else {
-                printf("6\n");
-        return &LineInterpolator::interpolate_bresenhams_O6;
-      }
-    }
-  } else { // Left
-    if (dy > 0) { // Up
-      // Goes up and left
-      if (std::abs(dx) >= std::abs(dy)) {
-        printf("3\n");
-        // Goes more left than up
-        return &LineInterpolator::interpolate_bresenhams_O3;
-      } else {
-        printf("2\n");
-        // Goes more up than left
-        return &LineInterpolator::interpolate_bresenhams_O2;
-      }
-    } else { // Down
-      // Goes down and left
-      if (std::abs(dx) > std::abs(dy)) {
-        // Goes more left than down
-        printf("4\n");
-        return &LineInterpolator::interpolate_bresenhams_O4;
-      } else {
-        // Goes more down then left
-        printf("5\n");
-        return &LineInterpolator::interpolate_bresenhams_O5;
-      }
-    }
-
-  }
-  */
 }
 
 // Returns a bresenhams line algorithm interpolator based on angle in degrees
@@ -192,6 +142,13 @@ bresenham_interpolator *LineInterpolator::get_interpolator(double angle) {
   return &(LineInterpolator::interpolate_bresenhams_O0);
 }
 
+// Return false always, indicating done
+bool LineInterpolator::invalid_bresenhams_interpolator(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  return false;
+}
+
+// Interpolate octant 0
 bool LineInterpolator::interpolate_bresenhams_O0(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error > 0) {
@@ -204,6 +161,7 @@ bool LineInterpolator::interpolate_bresenhams_O0(
   return (currentX <= endX);
 }
 
+// Interpolate 1. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O1(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error > 0) {
@@ -288,4 +246,21 @@ bool LineInterpolator::interpolate_bresenhams_O7(
   return (currentX <= endX);
 
   return false;
+}
+
+/* NOTE:
+ * Use this if you do not care about performance, if you care about performance,
+ * call get_interpolator and use what it returns in place of this
+ *
+ * MUST BE CALLED AFTER init_bresenhams WITH VARIABLES PASSED TO IT
+ * Returns if you are at the end of the line.
+ */
+bool LineInterpolator::interpolate_bresenhams(int &currentX, int &currentY,
+                                              int startX, int startY, int endX,
+                                              int endY, int &dx, int &dy,
+                                              double &slope_error) {
+  // Get appropriate octant function and return its value
+  bresenham_interpolator *func = get_interpolator(dx, dy);
+  return func(currentX, currentY, startX, startY, endX, endY, dx, dy,
+              slope_error);
 }
