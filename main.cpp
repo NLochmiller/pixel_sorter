@@ -246,14 +246,14 @@ void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
 void test(SDL_Renderer *renderer) {
   static bool init = false;
   int w = 101;
-  int h = 101;
+  int h = w;
   static SDL_Surface *img_surface =
       SDL_CreateRGBSurfaceWithFormat(0, w, h, 8, DEFAULT_PIXEL_FORMAT);
   // IMG_Load("/home/nloch/Pictures/backgrounds/wallhaven-q6ro3l.jpg");
 
   if (!init) {
     if (img_surface == NULL) {
-      printf("BAD SURFACE\n");
+      fprintf(stderr, "BAD SURFACE\n");
       exit(-1);
     }
 
@@ -267,12 +267,11 @@ void test(SDL_Renderer *renderer) {
     // Number of segments to test with
     double segments = 3 * 8.0f;
     double dang = 360.0f / segments;
-    int hyp_len = 20;
+    int hyp_len = w/2;
 
-    for (double a = 0; a < 360.0f; a += dang) {
+    for (double a = 0; a < 360.0f; a +=dang) {
       printf("angle %f\n", a);
-      double ang = 360 - a;
-      bresenham_interpolator *func = LineInterpolator::get_interpolator(a);
+      double ang = a;
       double ang_in_rads = ang * (M_PI / 180.0f);
       int curX, curY;
       int sx = w / 2;
@@ -285,7 +284,7 @@ void test(SDL_Renderer *renderer) {
       double slope_error = 0;
 
       test_octant(curX, curY, sx, sy, ex, ey, dx, dy, slope_error, img_surface,
-                  ang / 360.0f, func);
+                  ang / 360.0f, NULL);
     }
 
     init = true;
