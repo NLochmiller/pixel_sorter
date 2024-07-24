@@ -80,6 +80,9 @@ void LineInterpolator::init_bresenhams(int &currentX, int &currentY, int startX,
   dy = endY - startY;
 
   slope_error = 2 * dy - dx;
+  // Normalize
+  // dx = std::abs(dx);
+  // dy = std::abs(dy);
 }
 
 // Returns a bresenhams line algorithm interpolator based on angle in degrees
@@ -145,7 +148,7 @@ bool LineInterpolator::interpolate_bresenhams_O2(
     slope_error += 2 * std::abs(dy);
   }
   slope_error -= 2 * std::abs(dx);
-  currentY++; // Upk
+  currentY++; // Up
 
   return (currentY <= endY);
 }
@@ -166,9 +169,9 @@ bool LineInterpolator::interpolate_bresenhams_O4(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error < 0) {
     currentY--; // Go down
-    slope_error -= 2 * dx;
+    slope_error += 2 * std::abs(dx);
   }
-  slope_error += 2 * dy;
+  slope_error -= 2 * std::abs(dy);
   currentX--;  // Go left
   
   return (currentX >= endX);
@@ -189,7 +192,14 @@ bool LineInterpolator::interpolate_bresenhams_O5(
 
 bool LineInterpolator::interpolate_bresenhams_O6(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
-  return false;
+  if (slope_error > 0) {
+    currentX++; // Right
+    slope_error -= 2 * std::abs(dy);
+  }
+  slope_error += 2 * std::abs(dx);
+  currentY--; // Down
+
+  return (currentY >= endY);
 }
 
 bool LineInterpolator::interpolate_bresenhams_O7(
