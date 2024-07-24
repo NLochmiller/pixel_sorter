@@ -86,40 +86,78 @@ void LineInterpolator::init_bresenhams(int &currentX, int &currentY, int startX,
 }
 
 bresenham_interpolator *LineInterpolator::get_interpolator(int dx, int dy) {
+
+  int abs_dx = std::abs(dx);
+  int abs_dy = std::abs(dy);
+
+  if (dx > 0 && dy >= 0) { // Top right quadrent
+    if (abs_dx > abs_dy) {
+      printf("0\n");
+      return &LineInterpolator::interpolate_bresenhams_O0;
+
+    } else {
+      printf("1\n");
+      return &LineInterpolator::interpolate_bresenhams_O1;
+    }
+  } else if (dx <= 0 && dy > 0) {
+    if (abs_dx < abs_dy) {
+      printf("2\n");
+      return &LineInterpolator::interpolate_bresenhams_O2;
+    } else {
+      printf("3\n");
+      return &LineInterpolator::interpolate_bresenhams_O3;
+    }
+  }
+
+  return &LineInterpolator::interpolate_bresenhams_O0;
+  /*
   if (dx >= 0) {  // Right
     if (dy >= 0) {  // Up
       // Goes up and right
-      if (dx >= dy) {
+      if (std::abs(dx) >= std::abs(dy)) {
+        printf("0\n");
         return &LineInterpolator::interpolate_bresenhams_O0;
       } else {
+        printf("1\n");
         return &LineInterpolator::interpolate_bresenhams_O1;
       }
     } else { // Down
       // Goes down and right
-      if (dx >= dy) {
+      if (std::abs(dx) >= std::abs(dy)) {
+                printf("7\n");
         return &LineInterpolator::interpolate_bresenhams_O7;
       } else {
+                printf("6\n");
         return &LineInterpolator::interpolate_bresenhams_O6;
       }
     }
   } else { // Left
-    if (dy >= 0) { // Up
+    if (dy > 0) { // Up
       // Goes up and left
-      if (dx >= dy) {
+      if (std::abs(dx) >= std::abs(dy)) {
+        printf("3\n");
+        // Goes more left than up
         return &LineInterpolator::interpolate_bresenhams_O3;
       } else {
+        printf("2\n");
+        // Goes more up than left
         return &LineInterpolator::interpolate_bresenhams_O2;
       }
     } else { // Down
       // Goes down and left
-      if (dx >= dy) {
+      if (std::abs(dx) > std::abs(dy)) {
+        // Goes more left than down
+        printf("4\n");
         return &LineInterpolator::interpolate_bresenhams_O4;
       } else {
+        // Goes more down then left
+        printf("5\n");
         return &LineInterpolator::interpolate_bresenhams_O5;
       }
     }
-    
+
   }
+  */
 }
 
 // Returns a bresenhams line algorithm interpolator based on angle in degrees
@@ -161,7 +199,7 @@ bool LineInterpolator::interpolate_bresenhams_O0(
     slope_error -= 2 * std::abs(dx);
   }
   slope_error += 2 * std::abs(dy);
-  currentX++;  // Head right
+  currentX++; // Head right
 
   return (currentX <= endX);
 }
@@ -197,7 +235,7 @@ bool LineInterpolator::interpolate_bresenhams_O3(
     slope_error -= 2 * std::abs(dx);
   }
   slope_error += 2 * std::abs(dy);
-  currentX--;  // Go left
+  currentX--; // Go left
 
   return (currentX >= endX);
 }
@@ -209,8 +247,8 @@ bool LineInterpolator::interpolate_bresenhams_O4(
     slope_error += 2 * std::abs(dx);
   }
   slope_error -= 2 * std::abs(dy);
-  currentX--;  // Go left
-  
+  currentX--; // Go left
+
   return (currentX >= endX);
 }
 
@@ -224,7 +262,6 @@ bool LineInterpolator::interpolate_bresenhams_O5(
   currentY--; // Down
 
   return (currentY >= endY);
-
 }
 
 bool LineInterpolator::interpolate_bresenhams_O6(
@@ -246,8 +283,8 @@ bool LineInterpolator::interpolate_bresenhams_O7(
     slope_error += 2 * std::abs(dx);
   }
   slope_error -= 2 * std::abs(dy);
-  currentX++;  // Go right
-  
+  currentX++; // Go right
+
   return (currentX <= endX);
 
   return false;

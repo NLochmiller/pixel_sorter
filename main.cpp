@@ -230,8 +230,9 @@ void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
   // For each octant
   LineInterpolator::init_bresenhams(currentX, currentY, sx, sy, ex, ey, dx, dy,
                                     slope_error);
-  // func  = LineInterpolator::get_interpolator(dx, dy);  
-  printf("(%d, %d) to (%d, %d)\n", sx, sy, ex, ey);
+
+  func  = LineInterpolator::get_interpolator(dx, dy);  
+  printf("(%d, %d) to (%d, %d) is (%d, %d)\n", sx, sy, ex, ey, dx, dy);
   Uint32 black =
       SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 255 - 255*percent, 0, 255);
   Uint32 *pixels = (Uint32 *)img_surface->pixels;
