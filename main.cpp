@@ -233,7 +233,7 @@ void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
   
   printf("(%d, %d) to (%d, %d)\n", sx, sy, ex, ey);
   Uint32 black =
-      SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 0, 0, 255);
+      SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 255 - 255*percent, 0, 255);
   Uint32 *pixels = (Uint32 *)img_surface->pixels;
   do {
     printf("  (%d, %d)\n", currentX, currentY);
@@ -264,7 +264,7 @@ void test(SDL_Renderer *renderer) {
     SDL_FillRect(img_surface, &whole_surf_rect, (Uint32)background_color);
 
     // Number of segments to test with
-    double segments = 2 * 8.0f;
+    double segments = 3 * 8.0f;
     double dang = 360.0f / segments;
     int hyp_len = 20;
 
