@@ -1,8 +1,7 @@
-#include <stdio.h>
+#include <cmath>
 #include <math.h>
+#include <stdio.h>
 
-#include <SDL.h>
-#include <SDL_image.h>
 #include "SDL_pixels.h"
 #include "SDL_render.h"
 #include "SDL_stdinc.h"
@@ -11,6 +10,8 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
+#include <SDL.h>
+#include <SDL_image.h>
 
 #include "imfilebrowser.h"
 
@@ -224,15 +225,15 @@ bool test_for_mac(int &a) {
 
 void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
                  int &dx, int &dy, double &slope_error,
-                 SDL_Surface *img_surface, double percent) {
+                 SDL_Surface *img_surface, double percent,
+                 bresenham_interpolator *func) {
   // For each octant
   LineInterpolator::init_bresenhams(currentX, currentY, sx, sy, ex, ey, dx, dy,
                                     slope_error);
-
-  bresenham_interpolator* func = LineInterpolator::get_interpolator(0);
-
+  
   printf("(%d, %d) to (%d, %d)\n", sx, sy, ex, ey);
-  Uint32 black = SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 0, 0, 255);
+  Uint32 black =
+      SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 0, 0, 255);
   Uint32 *pixels = (Uint32 *)img_surface->pixels;
   do {
     printf("  (%d, %d)\n", currentX, currentY);
@@ -263,29 +264,34 @@ void test(SDL_Renderer *renderer) {
     SDL_FillRect(img_surface, &whole_surf_rect, (Uint32)background_color);
 
     // Number of segments to test with
-    double segments = 8.0f;
+    double segments = 2 * 8.0f;
     double dang = 360.0f / segments;
     int hyp_len = 20;
 
-    for (double ang = 0; ang < 360.0f; ang += dang) {
-      printf("angle %f\n", ang);
-      double ang_in_rads = ang * (M_PI/180.0f);
+    for (double a = 0; a < 360.0f; a += dang) {
+      printf("angle %f\n", a);
+      double ang = 360 - a;
+      bresenham_interpolator *func = LineInterpolator::get_interpolator(a);
+      double ang_in_rads = ang * (M_PI / 180.0f);
       int curX, curY;
-      int sx = w/2;
-      int sy = h/2;
-      int ex = sx + cos(-ang_in_rads) * hyp_len;
-      int ey = sy + sin(-ang_in_rads) * hyp_len;
+      int sx = w / 2;
+      int sy = h / 2;
+      
+      int ex = sx + std::round(cos(-ang_in_rads) * hyp_len);
+      int ey = sy + std::round(sin(-ang_in_rads) * hyp_len);
       int dx = 0;
       int dy = 0;
       double slope_error = 0;
 
-      test_octant(curX, curY, sx, sy, ex, ey, dx, dy, slope_error, img_surface, ang/360.0f);
+      test_octant(curX, curY, sx, sy, ex, ey, dx, dy, slope_error, img_surface,
+                  ang / 360.0f, func);
     }
 
     init = true;
   }
 
-  h = 300;
+  h*=3;
+  w*=3;
   displaySurface(renderer, img_surface, h, h);
 }
 
