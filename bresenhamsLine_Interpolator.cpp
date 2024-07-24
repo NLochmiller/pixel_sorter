@@ -145,7 +145,7 @@ bool LineInterpolator::interpolate_bresenhams_O2(
     slope_error += 2 * std::abs(dy);
   }
   slope_error -= 2 * std::abs(dx);
-  currentY++; // Up
+  currentY++; // Upk
 
   return (currentY <= endY);
 }
@@ -176,7 +176,15 @@ bool LineInterpolator::interpolate_bresenhams_O4(
 
 bool LineInterpolator::interpolate_bresenhams_O5(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
-  return false;
+  if (slope_error < 0) {
+    currentX--; // Left
+    slope_error += 2 * std::abs(dy);
+  }
+  slope_error -= 2 * std::abs(dx);
+  currentY--; // Down
+
+  return (currentY >= endY);
+
 }
 
 bool LineInterpolator::interpolate_bresenhams_O6(
