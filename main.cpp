@@ -1,3 +1,8 @@
+#include <stdio.h>
+#include <math.h>
+
+#include <SDL.h>
+#include <SDL_image.h>
 #include "SDL_pixels.h"
 #include "SDL_render.h"
 #include "SDL_stdinc.h"
@@ -8,10 +13,6 @@
 #include "imgui_impl_sdlrenderer2.h"
 
 #include "imfilebrowser.h"
-
-#include <SDL.h>
-#include <SDL_image.h>
-#include <stdio.h>
 
 // Local includes
 #include "bresenhamsLine_Interpolator.hpp"
@@ -216,6 +217,30 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
   return true;
 }
 
+bool test_for_mac(int &a) {
+  a = 30;
+  return a < 45;
+}
+
+void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
+                 int &dx, int &dy, double &slope_error,
+                 SDL_Surface *img_surface, double percent) {
+  // For each octant
+  LineInterpolator::init_bresenhams(currentX, currentY, sx, sy, ex, ey, dx, dy,
+                                    slope_error);
+
+  bresenham_interpolator* func = LineInterpolator::get_interpolator(0);
+
+  printf("(%d, %d) to (%d, %d)\n", sx, sy, ex, ey);
+  Uint32 black = SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 0, 0, 255);
+  Uint32 *pixels = (Uint32 *)img_surface->pixels;
+  do {
+    printf("  (%d, %d)\n", currentX, currentY);
+    // n*WIDTH+m
+    pixels[currentY * img_surface->h + currentX] = black;
+  } while (func(currentX, currentY, sx, sy, ex, ey, dx, dy, slope_error));
+}
+
 void test(SDL_Renderer *renderer) {
   static bool init = false;
   int w = 101;
@@ -231,26 +256,31 @@ void test(SDL_Renderer *renderer) {
     }
 
     // Fill with white
-    const SDL_Rect rect = {.x = 0, .y = 0, .w = w, .h = h};
-    Uint32 color = SDL_MapRGBA(img_surface->format, 255, 255, 255, 255);
+    const SDL_Rect whole_surf_rect = {.x = 0, .y = 0, .w = w, .h = h};
+    Uint32 background_color =
+        SDL_MapRGBA(img_surface->format, 255, 255, 255, 255);
 
-    SDL_FillRect(img_surface, &rect, (Uint32)color);
+    SDL_FillRect(img_surface, &whole_surf_rect, (Uint32)background_color);
 
-    int curX, curY;
-    int sx = 0;
-    int sy = 1;
-    int ex = 6;
-    int ey = 4;
-    int dx = 0;
-    int dy = 0;
-    double slope_error = 0;
+    // Number of segments to test with
+    double segments = 8.0f;
+    double dang = 360.0f / segments;
+    int hyp_len = 20;
 
-    LineInterpolator::init_bresenhams(curX, curY, sx, sy, ex, ey, dx, dy,
-                                      slope_error);
-    do {
-       printf("(%d, %d)\n", curX, curY);
-    }    while (LineInterpolator::inerpolate_bresenhams(curX, curY, sx, sy, ex, ey,
-                                                   dx, dy, slope_error));
+    for (double ang = 0; ang < 360.0f; ang += dang) {
+      printf("angle %f\n", ang);
+      double ang_in_rads = ang * (M_PI/180.0f);
+      int curX, curY;
+      int sx = w/2;
+      int sy = h/2;
+      int ex = sx + cos(-ang_in_rads) * hyp_len;
+      int ey = sy + sin(-ang_in_rads) * hyp_len;
+      int dx = 0;
+      int dy = 0;
+      double slope_error = 0;
+
+      test_octant(curX, curY, sx, sy, ex, ey, dx, dy, slope_error, img_surface, ang/360.0f);
+    }
 
     init = true;
   }

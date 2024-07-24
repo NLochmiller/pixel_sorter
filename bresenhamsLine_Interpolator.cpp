@@ -1,5 +1,4 @@
 #include "bresenhamsLine_Interpolator.hpp"
-#include <cstdio>
 
 /*
  * === ANGLES ==================================================================
@@ -33,10 +32,14 @@
  * └─────────┘
  */
 
-bool LineInterpolator::inerpolate_bresenhams(int &currentX, int &currentY,
-                                             int startX, int startY, int endX,
-                                             int endY, int &dx, int &dy,
-                                             double &slope_error) {
+/*
+  Have a function that returns an interpolator, something like get_interpolator
+ */
+
+bool LineInterpolator::interpolate_bresenhams(int &currentX, int &currentY,
+                                              int startX, int startY, int endX,
+                                              int endY, int &dx, int &dy,
+                                              double &slope_error) {
   /*
   if (slope_error > 0) {
     currentY++;
@@ -75,4 +78,64 @@ void LineInterpolator::init_bresenhams(int &currentX, int &currentY, int startX,
   dy = endY - startY;
 
   slope_error = 2 * dy - dx;
+}
+
+// Returns a bresenhams line algorithm interpolator based on angle in degrees
+bresenham_interpolator* LineInterpolator::get_interpolator(double angle) {
+  return &(LineInterpolator::interpolate_bresenhams_O0);
+}
+
+bool LineInterpolator::interpolate_bresenhams_O0(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  if (slope_error > 0) {
+    currentY--;
+    slope_error -= 2 * dx;
+  }
+  slope_error += 2 * dy;
+  currentX++;
+
+  return (currentX <= endX);
+  return true;
+}
+
+bool LineInterpolator::interpolate_bresenhams_O1(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  return true;
+}
+
+bool LineInterpolator::interpolate_bresenhams_O2(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  return true;
+}
+
+bool LineInterpolator::interpolate_bresenhams_O3(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  return true;
+}
+
+bool LineInterpolator::interpolate_bresenhams_O4(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  return true;
+}
+
+bool LineInterpolator::interpolate_bresenhams_O5(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  return true;
+}
+
+bool LineInterpolator::interpolate_bresenhams_O6(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  return true;
+}
+
+bool LineInterpolator::interpolate_bresenhams_O7(
+    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  if (slope_error > 0) {
+    currentY++;
+    slope_error -= 2 * dx;
+  }
+  slope_error += 2 * dy;
+  currentX++;
+
+  return (currentX <= endX);
 }
