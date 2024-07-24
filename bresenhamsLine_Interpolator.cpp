@@ -204,6 +204,14 @@ bool LineInterpolator::interpolate_bresenhams_O6(
 
 bool LineInterpolator::interpolate_bresenhams_O7(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+  if (slope_error < 0) {
+    currentY--; // Go down
+    slope_error += 2 * std::abs(dx);
+  }
+  slope_error -= 2 * std::abs(dy);
+  currentX++;  // Go right
+  
+  return (currentX <= endX);
 
   return false;
 }
