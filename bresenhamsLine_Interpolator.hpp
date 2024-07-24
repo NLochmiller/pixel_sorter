@@ -50,7 +50,7 @@ public:
   static bresenham_interpolator interpolate_bresenhams_O6;
   static bresenham_interpolator interpolate_bresenhams_O7;
 
-    // Interperate along the line using bresenhams line drawing algorithm
+  // Interperate along the line using bresenhams line drawing algorithm
   // returns if finished
   static bresenham_interpolator interpolate_bresenhams;
 

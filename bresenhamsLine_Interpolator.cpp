@@ -72,35 +72,27 @@ bresenham_interpolator *LineInterpolator::get_interpolator(int dx, int dy) {
 
   if (dx > 0 && dy >= 0) { // Top right quadrant
     if (abs_dx > abs_dy) {
-      printf("0\n");
       return &LineInterpolator::interpolate_bresenhams_O0;
 
     } else {
-      printf("1\n");
       return &LineInterpolator::interpolate_bresenhams_O1;
     }
   } else if (dx <= 0 && dy > 0) { // Top left quadrant
     if (abs_dx < abs_dy) {        // [90, 135)
-      printf("2\n");
       return &LineInterpolator::interpolate_bresenhams_O2;
     } else {
-      printf("3\n");
       return &LineInterpolator::interpolate_bresenhams_O3;
     }
   } else if (dx < 0 && dy <= 0) { // Bottom left quadrant
     if (abs_dx >= abs_dy) {
-      printf("4\n");
       return &LineInterpolator::interpolate_bresenhams_O4;
     } else {
-      printf("5\n");
       return &LineInterpolator::interpolate_bresenhams_O5;
     }
   } else if (dx >= 0 && dy < 0) { // Bottom right quadrent
     if (abs_dx < abs_dy) {
-      printf("6\n");
       return &LineInterpolator::interpolate_bresenhams_O6;
     } else {
-      printf("7\n");
       return &LineInterpolator::interpolate_bresenhams_O7;
     }
   }
@@ -114,28 +106,20 @@ bresenham_interpolator *LineInterpolator::get_interpolator(int dx, int dy) {
 // Angle must be in range [0, 360)
 bresenham_interpolator *LineInterpolator::get_interpolator(double angle) {
   if ((angle >= 0.0f && angle < 45.0f) || angle == 360.0f) {
-    printf("O0 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O0);
   } else if (angle >= 45.0f && angle < 90.0f) {
-    printf("O1 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O1);
   } else if (angle >= 90.0f && angle < 135.0f) {
-    printf("O2 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O2);
   } else if (angle >= 135.0f && angle < 180.0f) {
-    printf("O3 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O3);
   } else if (angle >= 180.0f && angle < 225.0f) {
-    printf("O4 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O4);
   } else if (angle >= 225.0f && angle < 270.0f) {
-    printf("O5 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O5);
   } else if (angle >= 270.0f && angle < 315.0f) {
-    printf("O6 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O6);
   } else if (angle >= 315.0f && angle < 360.0f) {
-    printf("O7 %f\n", angle);
     return &(LineInterpolator::interpolate_bresenhams_O7);
   }
   // Default to octant 0
@@ -161,7 +145,7 @@ bool LineInterpolator::interpolate_bresenhams_O0(
   return (currentX <= endX);
 }
 
-// Interpolate 1. See octant 0 for more information
+// Interpolate octant 1. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O1(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error > 0) {
@@ -174,6 +158,7 @@ bool LineInterpolator::interpolate_bresenhams_O1(
   return (currentY <= endY);
 }
 
+// Interpolate octant 2. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O2(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error < 0) {
@@ -186,6 +171,7 @@ bool LineInterpolator::interpolate_bresenhams_O2(
   return (currentY <= endY);
 }
 
+// Interpolate octant 3. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O3(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error > 0) {
@@ -198,6 +184,7 @@ bool LineInterpolator::interpolate_bresenhams_O3(
   return (currentX >= endX);
 }
 
+// Interpolate octant 4. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O4(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error < 0) {
@@ -210,6 +197,7 @@ bool LineInterpolator::interpolate_bresenhams_O4(
   return (currentX >= endX);
 }
 
+// Interpolate octant 5. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O5(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error < 0) {
@@ -222,6 +210,7 @@ bool LineInterpolator::interpolate_bresenhams_O5(
   return (currentY >= endY);
 }
 
+// Interpolate octant 6. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O6(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error > 0) {
@@ -234,6 +223,7 @@ bool LineInterpolator::interpolate_bresenhams_O6(
   return (currentY >= endY);
 }
 
+// Interpolate octant 7. See octant 0 for more information
 bool LineInterpolator::interpolate_bresenhams_O7(
     BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
   if (slope_error < 0) {
