@@ -1,13 +1,13 @@
 #ifndef BRESENHAMSLINE_INTERPOLATOR_HPP_
 #define BRESENHAMSLINE_INTERPOLATOR_HPP_
 
-#define BRESENHAMS_INTERPOLATOR_ARGUMENTS                                      \
-  int &currentX, int &currentY, int startX, int startY, int endX, int endY,    \
-      int &dx, int &dy, double &slope_error
+#define BRESENHAMS_INTERPOLATOR_ARGS                                           \
+  int &currentX, int &currentY, int endX, int endY, int &dx, int &dy,          \
+      double &slope_error
 
 // Internal use only
-typedef bool bresenham_interpolator(int &, int &, int, int, int, int, int &,
-                                    int &, double &);
+typedef bool bresenham_interpolator(int &, int &, int, int, int &, int &,
+                                    double &);
 
 // Constants for different octants
 #define LINEINTERPOLATOR_OCTANT_0 0
@@ -36,10 +36,10 @@ public:
   /*
    * A interpolator that acts like NULL, it changes nothing and returns false.
    * This is intended to be passed when invalid input is given, if code is
-   * correctly setup, the loop with bad input should stop 
+   * correctly setup, the loop with bad input should stop
    */
   static bresenham_interpolator invalid_bresenhams_interpolator;
-  
+
   // For each octant.
   static bresenham_interpolator interpolate_bresenhams_O0;
   static bresenham_interpolator interpolate_bresenhams_O1;
@@ -53,7 +53,6 @@ public:
   // Interperate along the line using bresenhams line drawing algorithm
   // returns if finished
   static bresenham_interpolator interpolate_bresenhams;
-
 
 private:
 };

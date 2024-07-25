@@ -128,13 +128,12 @@ bresenham_interpolator *LineInterpolator::get_interpolator(double angle) {
 
 // Return false always, indicating done
 bool LineInterpolator::invalid_bresenhams_interpolator(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+    BRESENHAMS_INTERPOLATOR_ARGS) {
   return false;
 }
 
 // Interpolate octant 0
-bool LineInterpolator::interpolate_bresenhams_O0(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O0(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error > 0) {
     currentY++; // Go up
     slope_error -= 2 * std::abs(dx);
@@ -146,8 +145,7 @@ bool LineInterpolator::interpolate_bresenhams_O0(
 }
 
 // Interpolate octant 1. See octant 0 for more information
-bool LineInterpolator::interpolate_bresenhams_O1(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O1(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error > 0) {
     currentX++; // Right
     slope_error -= 2 * std::abs(dy);
@@ -159,8 +157,7 @@ bool LineInterpolator::interpolate_bresenhams_O1(
 }
 
 // Interpolate octant 2. See octant 0 for more information
-bool LineInterpolator::interpolate_bresenhams_O2(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O2(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error < 0) {
     currentX--; // Left
     slope_error += 2 * std::abs(dy);
@@ -172,8 +169,7 @@ bool LineInterpolator::interpolate_bresenhams_O2(
 }
 
 // Interpolate octant 3. See octant 0 for more information
-bool LineInterpolator::interpolate_bresenhams_O3(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O3(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error > 0) {
     currentY++; // Go up
     slope_error -= 2 * std::abs(dx);
@@ -185,8 +181,7 @@ bool LineInterpolator::interpolate_bresenhams_O3(
 }
 
 // Interpolate octant 4. See octant 0 for more information
-bool LineInterpolator::interpolate_bresenhams_O4(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O4(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error < 0) {
     currentY--; // Go down
     slope_error += 2 * std::abs(dx);
@@ -198,8 +193,7 @@ bool LineInterpolator::interpolate_bresenhams_O4(
 }
 
 // Interpolate octant 5. See octant 0 for more information
-bool LineInterpolator::interpolate_bresenhams_O5(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O5(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error < 0) {
     currentX--; // Left
     slope_error += 2 * std::abs(dy);
@@ -211,8 +205,7 @@ bool LineInterpolator::interpolate_bresenhams_O5(
 }
 
 // Interpolate octant 6. See octant 0 for more information
-bool LineInterpolator::interpolate_bresenhams_O6(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O6(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error > 0) {
     currentX++; // Right
     slope_error -= 2 * std::abs(dy);
@@ -224,8 +217,7 @@ bool LineInterpolator::interpolate_bresenhams_O6(
 }
 
 // Interpolate octant 7. See octant 0 for more information
-bool LineInterpolator::interpolate_bresenhams_O7(
-    BRESENHAMS_INTERPOLATOR_ARGUMENTS) {
+bool LineInterpolator::interpolate_bresenhams_O7(BRESENHAMS_INTERPOLATOR_ARGS) {
   if (slope_error < 0) {
     currentY--; // Go down
     slope_error += 2 * std::abs(dx);
@@ -245,12 +237,8 @@ bool LineInterpolator::interpolate_bresenhams_O7(
  * MUST BE CALLED AFTER init_bresenhams WITH VARIABLES PASSED TO IT
  * Returns if you are at the end of the line.
  */
-bool LineInterpolator::interpolate_bresenhams(int &currentX, int &currentY,
-                                              int startX, int startY, int endX,
-                                              int endY, int &dx, int &dy,
-                                              double &slope_error) {
+bool LineInterpolator::interpolate_bresenhams(BRESENHAMS_INTERPOLATOR_ARGS) {
   // Get appropriate octant function and return its value
   bresenham_interpolator *func = get_interpolator(dx, dy);
-  return func(currentX, currentY, startX, startY, endX, endY, dx, dy,
-              slope_error);
+  return func(currentX, currentY, endX, endY, dx, dy, slope_error);
 }

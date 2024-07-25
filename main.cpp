@@ -231,14 +231,14 @@ void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
   LineInterpolator::init_bresenhams(currentX, currentY, sx, sy, ex, ey, dx, dy,
                                     slope_error);
 
-  func  = LineInterpolator::get_interpolator(dx, dy);  
-  Uint32 black =
-      SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 255 - 255*percent, 0, 255);
+  func = LineInterpolator::get_interpolator(dx, dy);
+  Uint32 black = SDL_MapRGBA(img_surface->format, (Uint8)255 * percent,
+                             255 - 255 * percent, 0, 255);
   Uint32 *pixels = (Uint32 *)img_surface->pixels;
   do {
     // n*WIDTH+m
     pixels[TWOD_TO_1D(currentX, currentY, img_surface->w)] = black;
-  } while (func(currentX, currentY, sx, sy, ex, ey, dx, dy, slope_error));
+  } while (func(currentX, currentY, ex, ey, dx, dy, slope_error));
 }
 
 void test(SDL_Renderer *renderer) {
@@ -265,15 +265,15 @@ void test(SDL_Renderer *renderer) {
     // Number of segments to test with
     double segments = 3 * 8.0f;
     double dang = 360.0f / segments;
-    int hyp_len = w/2;
+    int hyp_len = w / 2;
 
-    for (double a = 0; a < 360.0f; a +=dang) {
+    for (double a = 0; a < 360.0f; a += dang) {
       double ang = a;
       double ang_in_rads = ang * (M_PI / 180.0f);
       int curX, curY;
       int sx = w / 2;
       int sy = h / 2;
-      
+
       int ex = sx + std::round(cos(-ang_in_rads) * hyp_len);
       int ey = sy + std::round(sin(-ang_in_rads) * hyp_len);
       int dx = 0;
@@ -287,8 +287,8 @@ void test(SDL_Renderer *renderer) {
     init = true;
   }
 
-  h*=3;
-  w*=3;
+  h *= 3;
+  w *= 3;
   displaySurface(renderer, img_surface, w, h);
 }
 
