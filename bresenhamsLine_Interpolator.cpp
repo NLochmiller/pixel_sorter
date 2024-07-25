@@ -96,10 +96,10 @@ bresenham_interpolator *LineInterpolator::get_interpolator(int dx, int dy) {
       return &LineInterpolator::interpolate_bresenhams_O7;
     }
   }
+  // Default to none
   fprintf(stderr, "LineInterpolator::get_interpolator Invalid dx dy (%d, %d)\n",
           dx, dy);
-
-  return &LineInterpolator::interpolate_bresenhams_O0;
+  return &LineInterpolator::invalid_bresenhams_interpolator;
 }
 
 // Returns a bresenhams line algorithm interpolator based on angle in degrees
@@ -122,8 +122,10 @@ bresenham_interpolator *LineInterpolator::get_interpolator(double angle) {
   } else if (angle >= 315.0f && angle < 360.0f) {
     return &(LineInterpolator::interpolate_bresenhams_O7);
   }
-  // Default to octant 0
-  return &(LineInterpolator::interpolate_bresenhams_O0);
+  // Default to none
+  fprintf(stderr, "LineInterpolator::get_interpolator Invalid angle %f\n",
+          angle);
+  return &(LineInterpolator::invalid_bresenhams_interpolator);
 }
 
 // Return false always, indicating done
