@@ -232,21 +232,19 @@ void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
                                     slope_error);
 
   func  = LineInterpolator::get_interpolator(dx, dy);  
-  printf("(%d, %d) to (%d, %d) is (%d, %d)\n", sx, sy, ex, ey, dx, dy);
   Uint32 black =
       SDL_MapRGBA(img_surface->format, (Uint8)255 * percent, 255 - 255*percent, 0, 255);
   Uint32 *pixels = (Uint32 *)img_surface->pixels;
   do {
-    printf("  (%d, %d)\n", currentX, currentY);
     // n*WIDTH+m
-    pixels[currentY * img_surface->h + currentX] = black;
+    pixels[TWOD_TO_1D(currentX, currentY, img_surface->w)] = black;
   } while (func(currentX, currentY, sx, sy, ex, ey, dx, dy, slope_error));
 }
 
 void test(SDL_Renderer *renderer) {
   static bool init = false;
   int w = 101;
-  int h = w;
+  int h = 101;
   static SDL_Surface *img_surface =
       SDL_CreateRGBSurfaceWithFormat(0, w, h, 8, DEFAULT_PIXEL_FORMAT);
   // IMG_Load("/home/nloch/Pictures/backgrounds/wallhaven-q6ro3l.jpg");
@@ -270,7 +268,6 @@ void test(SDL_Renderer *renderer) {
     int hyp_len = w/2;
 
     for (double a = 0; a < 360.0f; a +=dang) {
-      printf("angle %f\n", a);
       double ang = a;
       double ang_in_rads = ang * (M_PI / 180.0f);
       int curX, curY;
@@ -292,7 +289,7 @@ void test(SDL_Renderer *renderer) {
 
   h*=3;
   w*=3;
-  displaySurface(renderer, img_surface, h, h);
+  displaySurface(renderer, img_surface, w, h);
 }
 
 // The main window, aka the background window
