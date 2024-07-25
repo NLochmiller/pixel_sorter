@@ -17,8 +17,8 @@ SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp \
 OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 
 CXX = g++
-CXXFLAGS = -std=c++$(CXX_VERSION) -I ./ -I $(IMGUI_DIR) -I $(IMGUI_DIR)/backends \
-	-I $(LIBS_DIR)/file_browser
+CXXFLAGS = -std=c++$(CXX_VERSION) -I $(IMGUI_DIR) -I $(IMGUI_DIR)/backends     \
+	-I $(LIBS_DIR)/file_browser -I ./
 CXXFLAGS += -g -Wall -Wformat
 CXXFLAGS += `sdl2-config --cflags --libs`
 
