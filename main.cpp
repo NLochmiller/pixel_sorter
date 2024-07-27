@@ -52,6 +52,30 @@ void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
   ImGui::EndMainMenuBar();
 }
 
+// Update the texture to whatever surface is.
+// texture will always be destoryed, and can be NULL
+// if surface is NULL, texture is returned
+SDL_Texture *updateTexture(SDL_Renderer *renderer, SDL_Surface *surface,
+                           SDL_Texture *texture) {
+  if (surface == NULL) {
+    return NULL;
+  }
+
+  if (texture != NULL) {
+    // Memory cleanup
+    SDL_DestroyTexture(texture);
+    texture = NULL;
+  }
+
+  // Create the new texture to use
+  texture = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture == NULL) {
+    fprintf(stderr, "updateTexture: Could not create texture from surface\n");
+  }
+
+  return texture;
+}
+
 int main(int, char **) {
   // Setup SDL
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) !=
@@ -131,6 +155,7 @@ int main(int, char **) {
 
   /* Textures for images, used so we don't create one each frame */
   SDL_Texture *input_texture = NULL;
+  SDL_Texture *output_texture = NULL;
 
   bool done = false;
   /* === START OF MAIN LOOP ================================================= */
@@ -165,19 +190,7 @@ int main(int, char **) {
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
-        // Update texture
-        if (input_texture != NULL) {
-          // Memory cleanup
-          SDL_DestroyTexture(input_texture);
-          input_texture = NULL;
-        }
-
-        // Create the new texture to use
-        input_texture = SDL_CreateTextureFromSurface(renderer, input_surface);
-        if (input_texture == NULL) {
-          fprintf(stderr, "Could not create texture from input image");
-        }
-
+        input_texture = updateTexture(renderer, input_surface, input_texture);
         inputFileDialog.ClearSelected();
       }
     }
