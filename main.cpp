@@ -32,7 +32,9 @@
 // Forward declerations
 void render(SDL_Renderer *renderer);
 int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
-                SDL_Surface *&input_surface, SDL_Texture *&input_texture);
+                SDL_Surface *&input_surface, SDL_Texture *&input_texture,
+                SDL_Surface *&output_surface, SDL_Texture *&output_texture,
+                std::filesystem::path *output_path);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog) {
@@ -179,7 +181,8 @@ int main(int, char **) {
     ImGui::NewFrame();
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    main_window(viewport, renderer, input_surface, input_texture);
+    main_window(viewport, renderer, input_surface, input_texture, input_surface,
+                input_texture, NULL);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
@@ -202,8 +205,8 @@ int main(int, char **) {
       output_path = outputFileDialog.GetSelected();
       printf("Selected filename %s\n", output_path.c_str());
 
-      // TODO: Save output_surface to a image 
-      
+      // TODO: Save output_surface to a image
+
       outputFileDialog.ClearSelected();
     }
 
@@ -287,7 +290,9 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
 // The main window, aka the background window
 // Returns non zero on error
 int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
-                SDL_Surface *&input_surface, SDL_Texture *&input_texture) {
+                SDL_Surface *&input_surface, SDL_Texture *&input_texture,
+                SDL_Surface *&output_surface, SDL_Texture *&output_texture,
+                std::filesystem::path *output_path) {
   static ImGuiWindowFlags window_flags =
       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
@@ -310,6 +315,18 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                              1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
+
+      // Export button
+      {
+        // TODO: Find if path is empty
+        bool is_export_button_disabled =
+            output_surface == NULL /* || PATH BAD */;
+        ImGui::BeginDisabled(is_export_button_disabled);
+        if (ImGui::Button("Export")) {
+          printf("export!\n");
+        }
+        ImGui::EndDisabled();
+      }
 
       if (input_texture != NULL) {
         // Display image, for now at full size * max_percent
