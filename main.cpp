@@ -31,7 +31,8 @@
 
 // Forward declerations
 void render(SDL_Renderer *renderer);
-int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer);
+int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
+                SDL_Surface *&input_surface);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog) {
@@ -124,6 +125,10 @@ int main(int, char **) {
   outputFileDialog.SetTitle("Select output image");
   outputFileDialog.SetTypeFilters(SUPPORTED_IMAGE_TYPES);
 
+  /* Surfaces for images */
+  SDL_Surface *input_surface = NULL;
+  SDL_Surface *output_surface = NULL;
+
   bool done = false;
   /* === START OF MAIN LOOP ================================================= */
   while (!done) {
@@ -145,15 +150,20 @@ int main(int, char **) {
     ImGui::NewFrame();
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    main_window(viewport, renderer);
+    main_window(viewport, renderer, input_surface);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
+
 
     // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
-      printf("Selected filename %s\n",
-             inputFileDialog.GetSelected().string().c_str());
-      inputFileDialog.ClearSelected();
+      input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
+      if (input_surface == NULL) {
+        // TODO cancel file broser exit on error
+        fprintf(stderr, "File %s does not exist\n", inputFileDialog.GetSelected().c_str());
+      } else {
+        inputFileDialog.ClearSelected();        
+      }
     }
 
     // Process output file dialog
@@ -218,83 +228,10 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
   return true;
 }
 
-bool test_for_mac(int &a) {
-  a = 30;
-  return a < 45;
-}
-
-void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
-                 int &dx, int &dy, double &slope_error,
-                 SDL_Surface *img_surface, double percent,
-                 bresenham_interpolator *func) {
-  // For each octant
-  LineInterpolator::init_bresenhams(currentX, currentY, sx, sy, ex, ey, dx, dy,
-                                    slope_error);
-
-  func = LineInterpolator::get_interpolator(dx, dy);
-  Uint32 black = SDL_MapRGBA(img_surface->format, (Uint8)255 * percent,
-                             255 - 255 * percent, 0, 255);
-  Uint32 *pixels = (Uint32 *)img_surface->pixels;
-  do {
-    // n*WIDTH+m
-    pixels[TWOD_TO_1D(currentX, currentY, img_surface->w)] = black;
-  } while (func(currentX, currentY, ex, ey, dx, dy, slope_error));
-}
-
-void test(SDL_Renderer *renderer) {
-  static bool init = false;
-  int w = 101;
-  int h = 101;
-  static SDL_Surface *img_surface =
-      SDL_CreateRGBSurfaceWithFormat(0, w, h, 8, DEFAULT_PIXEL_FORMAT);
-  // IMG_Load("/home/nloch/Pictures/backgrounds/wallhaven-q6ro3l.jpg");
-
-  if (!init) {
-    if (img_surface == NULL) {
-      fprintf(stderr, "BAD SURFACE\n");
-      exit(-1);
-    }
-
-    // Fill with white
-    const SDL_Rect whole_surf_rect = {.x = 0, .y = 0, .w = w, .h = h};
-    Uint32 background_color =
-        SDL_MapRGBA(img_surface->format, 255, 255, 255, 255);
-
-    SDL_FillRect(img_surface, &whole_surf_rect, (Uint32)background_color);
-
-    // Number of segments to test with
-    double segments = 3 * 8.0f;
-    double dang = 360.0f / segments;
-    int hyp_len = w / 2;
-
-    for (double a = 0; a < 360.0f; a += dang) {
-      double ang = a;
-      double ang_in_rads = ang * (M_PI / 180.0f);
-      int curX, curY;
-      int sx = w / 2;
-      int sy = h / 2;
-
-      int ex = sx + std::round(cos(-ang_in_rads) * hyp_len);
-      int ey = sy + std::round(sin(-ang_in_rads) * hyp_len);
-      int dx = 0;
-      int dy = 0;
-      double slope_error = 0;
-
-      test_octant(curX, curY, sx, sy, ex, ey, dx, dy, slope_error, img_surface,
-                  ang / 360.0f, NULL);
-    }
-
-    init = true;
-  }
-
-  h *= 3;
-  w *= 3;
-  displaySurface(renderer, img_surface, w, h);
-}
-
 // The main window, aka the background window
 // Returns non zero on error
-int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer) {
+int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
+                SDL_Surface *&input_surface) {
   static ImGuiWindowFlags window_flags =
       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
@@ -317,7 +254,13 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer) {
                              1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
-      test(renderer);
+      
+
+      if (input_surface != NULL) {
+        // Display image, for now at full size
+        displaySurface(renderer, input_surface, 0, 0);
+      }
+
     }
     ImGui::EndGroup();
 
@@ -327,6 +270,7 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer) {
     {
       ImGui::Text("First item on right");
       ImGui::Text("Second item on right");
+
     }
     ImGui::EndGroup();
   }
