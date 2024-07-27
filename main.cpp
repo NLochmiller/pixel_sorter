@@ -32,7 +32,7 @@
 // Forward declerations
 void render(SDL_Renderer *renderer);
 int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
-                SDL_Surface *&input_surface);
+                SDL_Surface *&input_surface, SDL_Texture *&input_texture);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog) {
@@ -129,6 +129,9 @@ int main(int, char **) {
   SDL_Surface *input_surface = NULL;
   SDL_Surface *output_surface = NULL;
 
+  /* Textures for images, used so we don't create one each frame */
+  SDL_Texture *input_texture = NULL;
+
   bool done = false;
   /* === START OF MAIN LOOP ================================================= */
   while (!done) {
@@ -150,7 +153,7 @@ int main(int, char **) {
     ImGui::NewFrame();
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    main_window(viewport, renderer, input_surface);
+    main_window(viewport, renderer, input_surface, input_texture);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
@@ -162,6 +165,19 @@ int main(int, char **) {
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
+        // Update texture
+        if (input_texture != NULL) {
+          // Memory cleanup
+          SDL_DestroyTexture(input_texture);
+          input_texture = NULL;
+        }
+
+        // Create the new texture to use
+        input_texture = SDL_CreateTextureFromSurface(renderer, input_surface);
+        if (input_texture == NULL) {
+          fprintf(stderr, "Could not create texture from input image");
+        }
+
         inputFileDialog.ClearSelected();
       }
     }
@@ -202,6 +218,29 @@ void render(SDL_Renderer *renderer) {
   SDL_RenderPresent(renderer);
 }
 
+// Display the texture
+// A width or height of 0 indicates that the dimension of the texture should be
+// used
+bool displayTexture(SDL_Renderer *renderer, SDL_Texture *texture,
+                    uint width = 0, uint height = 0) {
+  // Get dimensions of the texture only if either width or height is zero
+  if (width == 0 || height == 0) {
+    int texture_width = 0;
+    int texture_height = 0;
+    SDL_QueryTexture(texture, NULL, NULL, &texture_width, &texture_height);
+    // Assign the dimesions as needed
+    if (width == 0) {
+      width = texture_width;
+    }
+    if (height == 0) {
+      height = texture_height;
+    }
+  }
+
+  ImGui::Image((void *)texture, ImVec2(width, height));
+  return true;
+}
+
 // For width and height, 0 indicates to use the respective dimension of the
 // surface
 bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
@@ -213,7 +252,7 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
   SDL_Texture *texture_ptr = SDL_CreateTextureFromSurface(renderer, surface);
   if (texture_ptr == NULL) {
     printf("Bad texture pointer");
-    exit(-2);
+    return false;
   }
 
   // Adjust width and height to the images if desired (width or height = 0)
@@ -231,7 +270,7 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
 // The main window, aka the background window
 // Returns non zero on error
 int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
-                SDL_Surface *&input_surface) {
+                SDL_Surface *&input_surface, SDL_Texture *&input_texture) {
   static ImGuiWindowFlags window_flags =
       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
@@ -255,10 +294,10 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
 
-      if (input_surface != NULL) {
+      if (input_texture != NULL) {
         // Display image, for now at full size * max_percent
         double percent = max_percent / 100.0f;
-        displaySurface(renderer, input_surface, input_surface->w * percent,
+        displayTexture(renderer, input_texture, input_surface->w * percent,
                        input_surface->h * percent);
       }
     }
