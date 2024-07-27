@@ -154,6 +154,7 @@ int main(int, char **) {
   SDL_Surface *output_surface = NULL;
 
   /* Textures for images, used so we don't create one each frame */
+  std::filesystem::path output_path;
   SDL_Texture *input_texture = NULL;
   SDL_Texture *output_texture = NULL;
 
@@ -198,8 +199,11 @@ int main(int, char **) {
     // Process output file dialog
     outputFileDialog.Display();
     if (outputFileDialog.HasSelected()) {
-      printf("Selected filename %s\n",
-             outputFileDialog.GetSelected().string().c_str());
+      output_path = outputFileDialog.GetSelected();
+      printf("Selected filename %s\n", output_path.c_str());
+
+      // TODO: Save output_surface to a image 
+      
       outputFileDialog.ClearSelected();
     }
 
