@@ -153,16 +153,16 @@ int main(int, char **) {
     main_window(viewport, renderer, input_surface);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
-
     // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
       input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
       if (input_surface == NULL) {
         // TODO cancel file broser exit on error
-        fprintf(stderr, "File %s does not exist\n", inputFileDialog.GetSelected().c_str());
+        fprintf(stderr, "File %s does not exist\n",
+                inputFileDialog.GetSelected().c_str());
       } else {
-        inputFileDialog.ClearSelected();        
+        inputFileDialog.ClearSelected();
       }
     }
 
@@ -254,13 +254,13 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                              1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
-      
 
       if (input_surface != NULL) {
-        // Display image, for now at full size
-        displaySurface(renderer, input_surface, 0, 0);
+        // Display image, for now at full size * max_percent
+        double percent = max_percent / 100.0f;
+        displaySurface(renderer, input_surface, input_surface->w * percent,
+                       input_surface->h * percent);
       }
-
     }
     ImGui::EndGroup();
 
@@ -270,7 +270,6 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
     {
       ImGui::Text("First item on right");
       ImGui::Text("Second item on right");
-
     }
     ImGui::EndGroup();
   }
