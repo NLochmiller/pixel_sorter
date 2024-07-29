@@ -2,11 +2,16 @@
 #define PIXELSORTER_HPP_
 
 #include <cstdint>
+#include <string>
 
-typedef uint32_t Uint32; // Compadability with SDL2
+
+// typedef uint32_t Uint32; // Compadability with SDL2
+using std::uint32_t;
+using std::string;
+
 
 // By default, assumes format
-typedef Uint32 PixelSorter_Pixel_t;
+typedef uint32_t PixelSorter_Pixel_t;
 
 namespace PixelSorter {
 void sort(PixelSorter_Pixel_t *&input_pixels,

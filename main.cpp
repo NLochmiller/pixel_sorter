@@ -31,18 +31,53 @@
   { ".png", ".jpg" }
 #endif
 
-// TODO: MOVE TO BETTER LOCATION
-void sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
-                  SDL_Surface *&output_surface) {
+const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
+// TODO: MOVE TO BETTER LOCATION
+
+/*
+ * A custom version of SDL_ConvertSurfaceFormat with the following differences:
+ *  1) Does not require the unused flag parameter
+ *  2) Always does the following
+ *    - Creates a copy of surface in pixel_format
+ *    - Frees old surface which is in the original format we don't want
+ *  3) The input surface should be immediatly replaced with the returned surface
+ *
+ * Inputs:
+ *   src - the existing SDL_Surface structure to convert.
+ *   fmt - the SDL_PixelFormat structure that the new surface is optimized for.
+ *
+ * Output:
+ *   A pointer to a copy of src in fmt. Never returns src.
+ *   Can return NULL if src is NULL or another error occurs
+ */
+SDL_Surface *SDL_ConvertSurfaceFormat_MemSafe(SDL_Surface *src,
+                                              const Uint32 fmt) {
+  if (src == NULL) {
+    return NULL;
+  }
+  SDL_Surface *new_surface = SDL_ConvertSurfaceFormat(src, fmt, 0);
+  SDL_FreeSurface(src);
+  src = NULL;
+  return new_surface;
+}
+
+// Wrapper for the PixelSorter::sort function, converts surfaces to pixel arrays
+// to pass onto it and so on
+bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
+                  SDL_Surface *&output_surface) {
+  if (input_surface == NULL || output_surface == NULL) {
+    return false;
+  }
+  
   // While I would rather cast and pass directly, must do this so that the
   // compiler will stop complaining
-  PixelSorter_Pixel_t* input_pixels = (uint32_t*) input_surface->pixels;
-  PixelSorter_Pixel_t* output_pixels = (uint32_t*) output_surface->pixels;
+  PixelSorter_Pixel_t *input_pixels = (uint32_t *)input_surface->pixels;
+  PixelSorter_Pixel_t *output_pixels = (uint32_t *)output_surface->pixels;
 
-  
-  
   PixelSorter::sort(input_pixels, output_pixels);
+
+  return true;
 }
 
 // Forward declerations
@@ -176,6 +211,11 @@ int main(int, char **) {
   SDL_Texture *input_texture = NULL;
   SDL_Texture *output_texture = NULL;
 
+  // TODO: REMOVE_START
+  // This is just to get the compiler to be quiet
+  fprintf(stderr, "quiet compiler %p %p\n", output_surface, output_texture);
+  // TODO: REMOVE_END,
+
   bool done = false;
   /* === START OF MAIN LOOP ================================================= */
   while (!done) {
@@ -205,13 +245,16 @@ int main(int, char **) {
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
       input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
+      // Immediately convert to the basic format
+      input_surface =
+          SDL_ConvertSurfaceFormat_MemSafe(input_surface, DEFAULT_PIXEL_FORMAT);
+
       if (input_surface == NULL) {
         // TODO cancel file broser exit on error
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
         // Convert to
-
         input_texture = updateTexture(renderer, input_surface, input_texture);
         inputFileDialog.ClearSelected();
       }

@@ -3,7 +3,8 @@
 
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
                        PixelSorter_Pixel_t *&output_pixels) {
-  std::fprintf(stderr, "sort here\n");
+  std::fprintf(stderr, "sort here input is %p, output is %p\n", input_pixels,
+               output_pixels);
   /*
    * For each line:
    *  while out of bounds: move along line
