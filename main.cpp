@@ -25,45 +25,14 @@
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
 #endif
 
-// Image types that are supported
-#ifndef SUPPORTED_IMAGE_TYPES
-#define SUPPORTED_IMAGE_TYPES                                                  \
-  { ".png", ".jpg" }
-#endif
+
 
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
 // TODO: MOVE TO BETTER LOCATION
 
-/*
- * A custom version of SDL_ConvertSurfaceFormat with the following differences:
- *  1) Does not require the unused flag parameter
- *  2) Always does the following
- *    - Creates a copy of surface in pixel_format
- *    - Frees old surface which is in the original format we don't want
- *  3) The input surface should be immediatly replaced with the returned surface
- *
- * Inputs:
- *   src - the existing SDL_Surface structure to convert.
- *   fmt - the SDL_PixelFormat structure that the new surface is optimized for.
- *
- * Output:
- *   A pointer to a copy of src in fmt. Never returns src.
- *   Can return NULL if src is NULL or another error occurs
- */
-SDL_Surface *SDL_ConvertSurfaceFormat_MemSafe(SDL_Surface *src,
-                                              const Uint32 fmt) {
-  if (src == NULL) {
-    return NULL;
-  }
-  SDL_Surface *new_surface = SDL_ConvertSurfaceFormat(src, fmt, 0);
-  SDL_FreeSurface(src);
-  src = NULL;
-  return new_surface;
-}
-
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel arrays
-// to pass onto it and so on
+// to pass onto it, and assembles some needed information
 bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
                   SDL_Surface *&output_surface) {
   if (input_surface == NULL || output_surface == NULL) {
@@ -80,6 +49,10 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
 }
 
 // Forward declerations
+SDL_Texture *updateTexture(SDL_Renderer *renderer, SDL_Surface *surface,
+                           SDL_Texture *texture);
+SDL_Surface *SDL_ConvertSurfaceFormat_MemSafe(SDL_Surface *src,
+                                              const Uint32 fmt);
 void render(SDL_Renderer *renderer);
 int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                 SDL_Surface *&input_surface, SDL_Texture *&input_texture,
@@ -102,30 +75,6 @@ void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
     }
   }
   ImGui::EndMainMenuBar();
-}
-
-// Update the texture to whatever surface is.
-// texture will always be destoryed, and can be NULL
-// if surface is NULL, texture is returned
-SDL_Texture *updateTexture(SDL_Renderer *renderer, SDL_Surface *surface,
-                           SDL_Texture *texture) {
-  if (surface == NULL) {
-    return NULL;
-  }
-
-  if (texture != NULL) {
-    // Memory cleanup
-    SDL_DestroyTexture(texture);
-    texture = NULL;
-  }
-
-  // Create the new texture to use
-  texture = SDL_CreateTextureFromSurface(renderer, surface);
-  if (texture == NULL) {
-    fprintf(stderr, "updateTexture: Could not create texture from surface\n");
-  }
-
-  return texture;
 }
 
 int main(int, char **) {
@@ -358,6 +307,60 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
   ImGui::Image((void *)texture_ptr, ImVec2(width, height));
   return true;
 }
+
+
+// Update the texture to whatever surface is.
+// texture will always be destoryed, and can be NULL
+// if surface is NULL, texture is returned
+SDL_Texture *updateTexture(SDL_Renderer *renderer, SDL_Surface *surface,
+                           SDL_Texture *texture) {
+  if (surface == NULL) {
+    return NULL;
+  }
+
+  if (texture != NULL) {
+    // Memory cleanup
+    SDL_DestroyTexture(texture);
+    texture = NULL;
+  }
+
+  // Create the new texture to use
+  texture = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture == NULL) {
+    fprintf(stderr, "updateTexture: Could not create texture from surface\n");
+  }
+
+  return texture;
+}
+
+
+/*
+ * A custom version of SDL_ConvertSurfaceFormat with the following differences:
+ *  1) Does not require the unused flag parameter
+ *  2) Always does the following
+ *    - Creates a copy of surface in pixel_format
+ *    - Frees old surface which is in the original format we don't want
+ *  3) The input surface should be immediatly replaced with the returned surface
+ *
+ * Inputs:
+ *   src - the existing SDL_Surface structure to convert.
+ *   fmt - the SDL_PixelFormat structure that the new surface is optimized for.
+ *
+ * Output:
+ *   A pointer to a copy of src in fmt. Never returns src.
+ *   Can return NULL if src is NULL or another error occurs
+ */
+SDL_Surface *SDL_ConvertSurfaceFormat_MemSafe(SDL_Surface *src,
+                                              const Uint32 fmt) {
+  if (src == NULL) {
+    return NULL;
+  }
+  SDL_Surface *new_surface = SDL_ConvertSurfaceFormat(src, fmt, 0);
+  SDL_FreeSurface(src);
+  src = NULL;
+  return new_surface;
+}
+
 
 // The main window, aka the background window
 // Returns non zero on error
