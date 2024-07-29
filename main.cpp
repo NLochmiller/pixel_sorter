@@ -69,14 +69,13 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   if (input_surface == NULL || output_surface == NULL) {
     return false;
   }
-  
+
   // While I would rather cast and pass directly, must do this so that the
   // compiler will stop complaining
   PixelSorter_Pixel_t *input_pixels = (uint32_t *)input_surface->pixels;
   PixelSorter_Pixel_t *output_pixels = (uint32_t *)output_surface->pixels;
 
   PixelSorter::sort(input_pixels, output_pixels);
-
   return true;
 }
 
@@ -254,8 +253,20 @@ int main(int, char **) {
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
-        // Convert to
+        // Convert to texture
         input_texture = updateTexture(renderer, input_surface, input_texture);
+
+        // Create the output surface to use
+        output_surface = SDL_CreateRGBSurfaceWithFormat(
+            0, input_surface->w, input_surface->h, DEFAULT_DEPTH,
+            DEFAULT_PIXEL_FORMAT);
+
+        if (output_surface == NULL) {
+          fprintf(stderr, "Failed to create output surface");
+        } else {
+          output_texture =
+              updateTexture(renderer, input_surface, input_texture);
+        }
         inputFileDialog.ClearSelected();
       }
     }

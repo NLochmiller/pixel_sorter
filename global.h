@@ -5,6 +5,8 @@
 
 // The default pixel format to be used in this program
 extern const uint32_t DEFAULT_PIXEL_FORMAT; //
+// The default pixel depth (in bits)
+#define DEFAULT_DEPTH 8
 #define TWOD_TO_1D(_x_, _y_, _w_) _x_ + (_y_ * _w_)
 
 #endif // GLOBAL_H_
