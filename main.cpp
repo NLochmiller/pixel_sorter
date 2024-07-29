@@ -33,15 +33,59 @@ const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel arrays
 // to pass onto it, and assembles some needed information
 bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
-                  SDL_Surface *&output_surface) {
+                  SDL_Surface *&output_surface, double angle) {
   if (input_surface == NULL || output_surface == NULL) {
     return false;
+  }
+
+  // Test code that fills output with white
+  {
+    const SDL_Rect whole_surf_rect = {
+        .x = 0, .y = 0, .w = output_surface->w, .h = output_surface->h};
+    Uint32 background_color =
+        SDL_MapRGBA(output_surface->format, 255, 255, 255, 255);
+
+    SDL_FillRect(output_surface, &whole_surf_rect, (Uint32)background_color);
   }
 
   // While I would rather cast and pass directly, must do this so that the
   // compiler will stop complaining
   PixelSorter_Pixel_t *input_pixels = (uint32_t *)input_surface->pixels;
   PixelSorter_Pixel_t *output_pixels = (uint32_t *)output_surface->pixels;
+
+  // Generate the line
+  if (angle == 360) {
+    angle = 0;
+  }
+  int currentX = 0, currentY = 0, startX = 0, startY = 0, endX = 0, endY = 0,
+      deltaX = 0, deltaY = 0;
+  double slope_error;
+  // TODO: Get this to be garunteed to work
+  // Let the hypotenuse be the longer side
+  int hypotenuse_len = std::max(input_surface->w, input_surface->h);
+
+  // Calculate end points
+  double ang_in_rads = angle * (M_PI / 180.0f);
+  endX = startX + std::round(cos(-ang_in_rads) * hypotenuse_len);
+  endY = startY + std::round(sin(-ang_in_rads) * hypotenuse_len);
+  deltaX = endX - startX;
+  deltaY = endY - startY;
+
+  LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
+                                    endY, deltaX, deltaY, slope_error);
+
+  bresenham_interpolator *interpolator =
+      LineInterpolator::get_interpolator(deltaX, deltaY);
+
+  do {
+    if (0 <= currentX && currentX <= output_surface->w && 0 <= currentY &&
+        currentY <= output_surface->h) {
+      output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
+          SDL_MapRGB(input_surface->format, 255, 0, 0);
+      printf("(%d, %d)\n", currentX, currentY);
+    }
+  } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
+                        slope_error));
 
   PixelSorter::sort(input_pixels, output_pixels);
   return true;
@@ -164,8 +208,8 @@ int main(int, char **) {
     ImGui::NewFrame();
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    main_window(viewport, renderer, input_surface, input_texture, output_surface,
-                output_texture, NULL);
+    main_window(viewport, renderer, input_surface, input_texture,
+                output_surface, output_texture, NULL);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
@@ -179,8 +223,8 @@ int main(int, char **) {
                 inputFileDialog.GetSelected().c_str());
       } else {
         // Immediately convert to the basic format
-        input_surface =
-          SDL_ConvertSurfaceFormat_MemSafe(input_surface, DEFAULT_PIXEL_FORMAT);
+        input_surface = SDL_ConvertSurfaceFormat_MemSafe(input_surface,
+                                                         DEFAULT_PIXEL_FORMAT);
 
         // Convert to texture
         input_texture = updateTexture(renderer, input_surface, input_texture);
@@ -275,6 +319,9 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
 
+      static float angle = 90.0;
+      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f");
+
       // Export button
       {
         // TODO: Find if path is empty
@@ -291,7 +338,9 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       // Start sorting
       if (ImGui::Button("Sort")) {
-        sort_wrapper(renderer, input_surface, output_surface);
+        sort_wrapper(renderer, input_surface, output_surface, angle);
+        output_texture =
+            updateTexture(renderer, output_surface, output_texture);
       }
 
       // Zoom slider
