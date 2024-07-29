@@ -1,4 +1,5 @@
 #include <cmath>
+#include <cstdint>
 #include <math.h>
 #include <stdio.h>
 
@@ -17,6 +18,7 @@
 
 // Local includes
 #include "LineInterpolator.hpp"
+#include "PixelSorter.hpp"
 #include "global.h"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
@@ -28,6 +30,20 @@
 #define SUPPORTED_IMAGE_TYPES                                                  \
   { ".png", ".jpg" }
 #endif
+
+// TODO: MOVE TO BETTER LOCATION
+void sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
+                  SDL_Surface *&output_surface) {
+
+  // While I would rather cast and pass directly, must do this so that the
+  // compiler will stop complaining
+  PixelSorter_Pixel_t* input_pixels = (uint32_t*) input_surface->pixels;
+  PixelSorter_Pixel_t* output_pixels = (uint32_t*) output_surface->pixels;
+
+  
+  
+  PixelSorter::sort(input_pixels, output_pixels);
+}
 
 // Forward declerations
 void render(SDL_Renderer *renderer);
@@ -194,6 +210,8 @@ int main(int, char **) {
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
+        // Convert to
+
         input_texture = updateTexture(renderer, input_surface, input_texture);
         inputFileDialog.ClearSelected();
       }
@@ -316,17 +334,23 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
 
-            // Export button
+      // Export button
       {
         // TODO: Find if path is empty
         bool is_export_button_disabled =
             output_surface == NULL /* || PATH BAD */;
         ImGui::BeginDisabled(is_export_button_disabled);
         if (ImGui::Button("Export")) {
-          printf("export!\n");
+          fprintf(stderr, "export!\n");
           // TODO: Save to export path.
         }
+
         ImGui::EndDisabled();
+      }
+
+      // Start sorting
+      if (ImGui::Button("Sort")) {
+        sort_wrapper(renderer, input_surface, output_surface);
       }
 
       // Zoom slider
