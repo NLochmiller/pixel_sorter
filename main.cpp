@@ -316,7 +316,7 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                              "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
       ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
 
-      // Export button
+            // Export button
       {
         // TODO: Find if path is empty
         bool is_export_button_disabled =
@@ -324,13 +324,19 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         ImGui::BeginDisabled(is_export_button_disabled);
         if (ImGui::Button("Export")) {
           printf("export!\n");
+          // TODO: Save to export path.
         }
         ImGui::EndDisabled();
       }
 
+      // Zoom slider
+      static float image_zoom = 100.0;
+      ImGui::DragFloat("Image zoom", &image_zoom, 1.0f, 0.0f, 100.0f,
+                       "Zoom: %.2f%%", 0);
+
       if (input_texture != NULL) {
         // Display image, for now at full size * max_percent
-        double percent = max_percent / 100.0f;
+        double percent = image_zoom / 100.0f;
         displayTexture(renderer, input_texture, input_surface->w * percent,
                        input_surface->h * percent);
       }
