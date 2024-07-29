@@ -57,12 +57,4 @@ public:
 private:
 };
 
-// using bresenham_interpolator = bool (LineInterpolator::*)(int &, int &, int,
-// int, int, int, int &, int &, double &);
-typedef int (LineInterpolator::*typedefName)(int);
-// typedef
-// typename bresenham_interpolator;
-// (int &, int &, int, int, int, int, int &, int &,
-//                                double &);
-
 #endif // BRESENHAMSLINE_INTERPOLATOR_HPP_
