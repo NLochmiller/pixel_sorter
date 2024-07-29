@@ -164,27 +164,28 @@ int main(int, char **) {
     ImGui::NewFrame();
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    main_window(viewport, renderer, input_surface, input_texture, input_surface,
-                input_texture, NULL);
+    main_window(viewport, renderer, input_surface, input_texture, output_surface,
+                output_texture, NULL);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
       input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
-      // Immediately convert to the basic format
-      input_surface =
-          SDL_ConvertSurfaceFormat_MemSafe(input_surface, DEFAULT_PIXEL_FORMAT);
 
       if (input_surface == NULL) {
         // TODO cancel file broser exit on error
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
+        // Immediately convert to the basic format
+        input_surface =
+          SDL_ConvertSurfaceFormat_MemSafe(input_surface, DEFAULT_PIXEL_FORMAT);
+
         // Convert to texture
         input_texture = updateTexture(renderer, input_surface, input_texture);
 
-        // Create the output surface to use
+        // Create the output surface to use with this
         output_surface = SDL_CreateRGBSurfaceWithFormat(
             0, input_surface->w, input_surface->h, DEFAULT_DEPTH,
             DEFAULT_PIXEL_FORMAT);
@@ -193,7 +194,7 @@ int main(int, char **) {
           fprintf(stderr, "Failed to create output surface");
         } else {
           output_texture =
-              updateTexture(renderer, input_surface, input_texture);
+              updateTexture(renderer, output_surface, output_texture);
         }
         inputFileDialog.ClearSelected();
       }

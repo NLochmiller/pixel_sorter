@@ -4,11 +4,9 @@
 #include <cstdint>
 #include <string>
 
-
 // typedef uint32_t Uint32; // Compadability with SDL2
-using std::uint32_t;
 using std::string;
-
+using std::uint32_t;
 
 // By default, assumes format
 typedef uint32_t PixelSorter_Pixel_t;
