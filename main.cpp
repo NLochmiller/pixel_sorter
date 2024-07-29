@@ -16,7 +16,7 @@
 #include "imfilebrowser.h"
 
 // Local includes
-#include "bresenhamsLine_Interpolator.hpp"
+#include "LineInterpolator.hpp"
 #include "global.h"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)

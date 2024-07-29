@@ -1,4 +1,4 @@
-#include "bresenhamsLine_Interpolator.hpp"
+#include "LineInterpolator.hpp"
 #include <cstdio>
 #include <cstdlib>
 

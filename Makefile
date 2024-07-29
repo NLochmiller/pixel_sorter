@@ -1,7 +1,7 @@
 CXX_VERSION=17
 OUTPUT = pixel_sorter
 # Normal sources
-SOURCES = bresenhamsLine_Interpolator.cpp main.cpp
+SOURCES = LineInterpolator.cpp main.cpp
 
 LIBS_DIR = ./libs
 IMGUI_DIR = $(LIBS_DIR)/imgui
