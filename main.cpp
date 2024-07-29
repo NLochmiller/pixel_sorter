@@ -412,11 +412,18 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::DragFloat("Image zoom", &image_zoom, 1.0f, 0.0f, 100.0f,
                        "Zoom: %.2f%%", 0);
 
+      // Display images
+      double zoom_percent = image_zoom / 100.0f;
+      // Display input image zoomed in to percent
       if (input_texture != NULL) {
-        // Display image, for now at full size * max_percent
-        double percent = image_zoom / 100.0f;
-        displayTexture(renderer, input_texture, input_surface->w * percent,
-                       input_surface->h * percent);
+        displayTexture(renderer, input_texture, input_surface->w * zoom_percent,
+                       input_surface->h * zoom_percent);
+      }
+
+      // Display output image zoomed in to percent
+      if (output_texture != NULL) {
+        displayTexture(renderer, output_texture, output_surface->w * zoom_percent,
+                       output_surface->h * zoom_percent);
       }
     }
     ImGui::EndGroup();
