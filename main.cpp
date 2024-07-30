@@ -170,18 +170,25 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
     startX = 0;
     startY = 0;
   } else if (angle >= 90 && angle < 180) { // -x +y quadrant
-    startX = input_surface->w;
+    startX = input_surface->w - 1;
     startY = 0;
   } else if (angle >= 180 && angle < 270) { // -x -y quadrant
-    startX = input_surface->w;
-    startY = input_surface->h;
+    startX = input_surface->w - 1;
+    startY = input_surface->h - 1;
   } else { // +x -y quadrant
     startX = 0;
-    startY = input_surface->h;
+    startY = input_surface->h - 1;
   }
-
   endX = deltaX + startX;
   endY = deltaY + startY;
+
+  printf("%d %d to %d %d\n", startX, startY, endX, endY);
+
+  if (std::abs(deltaX) >= std::abs(deltaY)) {
+    // Change more over x than y, start should be offset by -deltaX?
+  } else {
+    // Change more over y than x, start should be offset by -deltaY?
+  }
 
   LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
                                     endY, deltaX, deltaY, slope_error);
@@ -190,11 +197,11 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
       LineInterpolator::get_interpolator(deltaX, deltaY);
 
   do {
-    if (0 <= currentX && currentX <= output_surface->w && 0 <= currentY &&
-        currentY <= output_surface->h) {
+    if (0 <= currentX && currentX < output_surface->w && 0 <= currentY &&
+        currentY < output_surface->h) {
       output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
           SDL_MapRGB(input_surface->format, 255, 0, 0);
-      printf("(%d, %d)\n", currentX, currentY);
+      // printf("(%d, %d)\n", currentX, currentY);
     }
   } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
                         slope_error));
@@ -327,7 +334,8 @@ int main(int, char **) {
     // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
-      input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
+      // input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
+      input_surface = SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 8, DEFAULT_PIXEL_FORMAT);
 
       if (input_surface == NULL) {
         // TODO cancel file broser exit on error
