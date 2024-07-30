@@ -193,6 +193,7 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
                                     endY, deltaX, deltaY, slope_error);
 
+  // Add each point to a queue
   bresenham_interpolator *interpolator =
       LineInterpolator::get_interpolator(deltaX, deltaY);
 
@@ -205,6 +206,8 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
     }
   } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
                         slope_error));
+
+  // For each n starting from startN to endN, sort along that line
 
   PixelSorter::sort(input_pixels, output_pixels);
   return true;
