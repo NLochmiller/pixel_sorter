@@ -177,14 +177,6 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   endX = deltaX + startX;
   endY = deltaY + startY;
 
-  printf("%d %d to %d %d\n", startX, startY, endX, endY);
-
-  if (std::abs(deltaX) >= std::abs(deltaY)) {
-    // Change more over x than y, start should be offset by -deltaX?
-  } else {
-    // Change more over y than x, start should be offset by -deltaY?
-  }
-
   LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
                                     endY, deltaX, deltaY, slope_error);
 
@@ -192,9 +184,12 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   bresenham_interpolator *interpolator =
       LineInterpolator::get_interpolator(deltaX, deltaY);
 
+  
+
   do {
     if (0 <= currentX && currentX < output_surface->w && 0 <= currentY &&
         currentY < output_surface->h) {
+
       output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
           SDL_MapRGB(input_surface->format, 255, 0, 0);
       // printf("(%d, %d)\n", currentX, currentY);
@@ -205,8 +200,43 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
 
   /* LINE GENERATION DONE */
 
+  /*
+   * Now in the perspective of 1 dimension L where L is the dimension with
+   * greater change, that is:
+   *   if |deltaX| >= |deltaY|, L = X.
+   *   if |deltaX| <  |deltaY|, L - Y.
+   *
+   * There is also another dimension S where S is the opposite of L, that is:
+   *   if L = X, S = Y.
+   *   If L = Y, S = X
+   */
+  /* Bad code that would affect how line works
+  // Use pointers to save on lines of code
+  int *startL = NULL;
+  int *endL = NULL;
+  int *deltaL = NULL;
+  int *deltaS = NULL;
+
+  // Change deltaL by deltaS where S is the dimension with a smaller delta
+  // without changing where the center of the N lines are
+  if (std::abs(deltaX) >= std::abs(deltaY)) { // X changes more than Y or same
+    startL = &startX;
+    endL = &endX;
+    deltaL = &deltaX;
+    deltaS = &deltaY;
+  } else { // Y changes more than X
+    startL = &startY;
+    endL = &endY;
+    deltaL = &deltaY;
+    deltaS = &deltaX;
+  }
+  // Extend start and end by offset, causing the deltaL to grow by 2*deltaS
+  int offset = ((*deltaL >= 0) ? *deltaS : -*deltaS);
+  (*startL) += offset;
+  (*endL) -= offset;
+  */
+
   // For each n starting from startN to endN, sort along that line
-  
 
   PixelSorter::sort(input_pixels, output_pixels);
   return true;
