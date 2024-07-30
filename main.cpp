@@ -72,12 +72,12 @@ point getEndPoint(double angle, double angle_degrees, double width,
       std::make_pair(length * std::cos(angle), length * std::sin(angle));
 
   // Check intersection with x's
-  // point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
-  // point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
+  point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
+  point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
 
   // Check intersection with y's
-  // point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
-  // point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
+  point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
+  point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
 #define IS_PARALLEL(_p_) (_p_.first == FLT_MAX && _p_.second == FLT_MAX)
 
   if (angle_degrees == 0 || angle_degrees == 360) {
@@ -88,12 +88,8 @@ point getEndPoint(double angle, double angle_degrees, double width,
     return std::make_pair(-width, 0); // Left -x, 0y
   } else if (angle_degrees == 270) {
     return std::make_pair(0, -height); // Down 0x, -y
-  }
-
-  if (angle_degrees >= 0 && angle_degrees < 90) {
+  } else if (angle_degrees >= 0 && angle_degrees < 90) {
     // top right, Only care about posX and posY
-    point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
-    point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
     if (IS_PARALLEL(posX) || posX.first > width || posX.second > height) {
       return posY; // because posX is out of bounds or line is parralel to X
     } else if (IS_PARALLEL(posY) || posY.first > width ||
@@ -102,8 +98,6 @@ point getEndPoint(double angle, double angle_degrees, double width,
     }
   } else if (angle_degrees >= 90 && angle_degrees < 180) {
     // top left, Only care about negX and posY
-    point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
-    point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
     if (IS_PARALLEL(negX) || negX.first < -width || negX.second > height) {
       return posY; // because negX is out of bounds or line is parralel to X
     } else if (IS_PARALLEL(posY) || posY.first < -width ||
@@ -112,8 +106,6 @@ point getEndPoint(double angle, double angle_degrees, double width,
     }
   } else if (angle_degrees >= 180 && angle_degrees < 270) {
     // Bottom left only care about negX and negY
-    point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
-    point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
     if (IS_PARALLEL(negX) || negX.first < -width || negX.second < -height) {
       return negY; // because negX is out of bounds or line is parralel to X
     } else if (IS_PARALLEL(negY) || negY.first < -width ||
@@ -122,8 +114,6 @@ point getEndPoint(double angle, double angle_degrees, double width,
     }
   } else if (angle_degrees >= 270 && angle_degrees < 360) {
     // Bottom right only care about posX and negY
-    point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
-    point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
     if (IS_PARALLEL(posX) || posX.first > width || posX.second < -height) {
       return negY; // because posX is out of bounds or line is parralel to X
     } else if (IS_PARALLEL(negY) || negY.first > width ||
