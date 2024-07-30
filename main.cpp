@@ -468,7 +468,7 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       // Zoom slider
       static float image_zoom = 100.0;
-      ImGui::DragFloat("Image zoom", &image_zoom, 1.0f, 0.0f, 100.0f,
+      ImGui::DragFloat("Image zoom", &image_zoom, 1.0f, 0.0f, 500.0f,
                        "Zoom: %.2f%%", 0);
 
       // Display images
