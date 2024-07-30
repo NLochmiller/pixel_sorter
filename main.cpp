@@ -155,17 +155,12 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   int currentX = 0, currentY = 0, startX = 0, startY = 0, endX = 0, endY = 0,
       deltaX = 0, deltaY = 0;
   double slope_error;
-  // TODO: Get this to be garunteed to work
 
   double ang_in_rads = angle * (M_PI / 180.0f);
-  // Calculate end points
   point endPoint =
       getEndPoint(ang_in_rads, angle, input_surface->w, input_surface->h);
-
-  // endX = endY =
   deltaX = (int)std::round(endPoint.first);
   deltaY = (int)std::round(endPoint.second);
-
   if (angle >= 0 && angle < 90) { // +x +y quadrant
     startX = 0;
     startY = 0;
@@ -203,11 +198,15 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
       output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
           SDL_MapRGB(input_surface->format, 255, 0, 0);
       // printf("(%d, %d)\n", currentX, currentY);
+      // Add point to a queue
     }
   } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
                         slope_error));
 
+  /* LINE GENERATION DONE */
+
   // For each n starting from startN to endN, sort along that line
+  
 
   PixelSorter::sort(input_pixels, output_pixels);
   return true;
@@ -338,7 +337,8 @@ int main(int, char **) {
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
       // input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
-      input_surface = SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 8, DEFAULT_PIXEL_FORMAT);
+      input_surface =
+          SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 8, DEFAULT_PIXEL_FORMAT);
 
       if (input_surface == NULL) {
         // TODO cancel file broser exit on error
