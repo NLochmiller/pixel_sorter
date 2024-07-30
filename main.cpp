@@ -13,6 +13,7 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include <SDL.h>
 #include <SDL_image.h>
+#include <utility>
 
 #include "imfilebrowser.h"
 
@@ -29,6 +30,110 @@
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
 // TODO: MOVE TO BETTER LOCATION
+
+typedef std::pair<double, double> point;
+
+// Return where two lines given points A and B intersect
+point lineLineIntersection(point A, point B, point C, point D) {
+  // Line AB represented as a1x + b1y = c1
+  double a1 = B.second - A.second;
+  double b1 = A.first - B.first;
+  double c1 = a1 * (A.first) + b1 * (A.second);
+
+  // Line CD represented as a2x + b2y = c2
+  double a2 = D.second - C.second;
+  double b2 = C.first - D.first;
+  double c2 = a2 * (C.first) + b2 * (C.second);
+
+  double determinant = a1 * b2 - a2 * b1;
+
+  if (determinant == 0) {
+    // The lines are parallel. This is simplified
+    // by returning a pair of FLT_MAX
+    return std::make_pair(FLT_MAX, FLT_MAX);
+  } else {
+    double x = (b2 * c1 - b1 * c2) / determinant;
+    double y = (a1 * c2 - a2 * c1) / determinant;
+    return std::make_pair(x, y);
+  }
+}
+
+// Return the end point normalized (as if we start at 0,0)
+point getEndPoint(double angle, double angle_degrees, double width,
+                  double height) {
+  point topRight = std::make_pair(width, height);
+  point topLeft = std::make_pair(-width, height);
+  point botRight = std::make_pair(width, -height);
+  point botLeft = std::make_pair(-width, -height);
+
+  point origin = std::make_pair(0, 0);
+  int length = 10; // just a test length
+  point lineEnd =
+      std::make_pair(length * std::cos(angle), length * std::sin(angle));
+
+  // Check intersection with x's
+  // point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
+  // point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
+
+  // Check intersection with y's
+  // point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
+  // point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
+#define IS_PARALLEL(_p_) (_p_.first == FLT_MAX && _p_.second == FLT_MAX)
+
+  if (angle_degrees == 0 || angle_degrees == 360) {
+    return std::make_pair(width, 0); // Right +x, 0y
+  } else if (angle_degrees == 90) {
+    return std::make_pair(0, height); // Up 0x, +y
+  } else if (angle_degrees == 180) {
+    return std::make_pair(-width, 0); // Left -x, 0y
+  } else if (angle_degrees == 270) {
+    return std::make_pair(0, -height); // Down 0x, -y
+  }
+
+  if (angle_degrees >= 0 && angle_degrees < 90) {
+    // top right, Only care about posX and posY
+    point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
+    point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
+    if (IS_PARALLEL(posX) || posX.first > width || posX.second > height) {
+      return posY; // because posX is out of bounds or line is parralel to X
+    } else if (IS_PARALLEL(posY) || posY.first > width ||
+               posY.second > height) {
+      return posX;
+    }
+  } else if (angle_degrees >= 90 && angle_degrees < 180) {
+    // top left, Only care about negX and posY
+    point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
+    point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
+    if (IS_PARALLEL(negX) || negX.first < -width || negX.second > height) {
+      return posY; // because negX is out of bounds or line is parralel to X
+    } else if (IS_PARALLEL(posY) || posY.first < -width ||
+               posY.second > height) {
+      return negX; // because negY is out of bounds or line is parralel to Y
+    }
+  } else if (angle_degrees >= 180 && angle_degrees < 270) {
+    // Bottom left only care about negX and negY
+    point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
+    point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
+    if (IS_PARALLEL(negX) || negX.first < -width || negX.second < -height) {
+      return negY; // because negX is out of bounds or line is parralel to X
+    } else if (IS_PARALLEL(negY) || negY.first < -width ||
+               negY.second < -height) {
+      return negX; // because negY is out of bounds or line is parralel to Y
+    }
+  } else if (angle_degrees >= 270 && angle_degrees < 360) {
+    // Bottom right only care about posX and negY
+    point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
+    point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
+    if (IS_PARALLEL(posX) || posX.first > width || posX.second < -height) {
+      return negY; // because posX is out of bounds or line is parralel to X
+    } else if (IS_PARALLEL(negY) || negY.first > width ||
+               negY.second < -height) {
+      return posX; // because negY is out of bounds or line is parralel to Y
+    }
+  }
+
+  return std::make_pair(0, 0);
+}
 
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel arrays
 // to pass onto it, and assembles some needed information
@@ -61,15 +166,32 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
       deltaX = 0, deltaY = 0;
   double slope_error;
   // TODO: Get this to be garunteed to work
-  // Let the hypotenuse be the longer side
-  int hypotenuse_len = std::max(input_surface->w, input_surface->h);
 
-  // Calculate end points
   double ang_in_rads = angle * (M_PI / 180.0f);
-  endX = startX + std::round(cos(-ang_in_rads) * hypotenuse_len);
-  endY = startY + std::round(sin(-ang_in_rads) * hypotenuse_len);
-  deltaX = endX - startX;
-  deltaY = endY - startY;
+  // Calculate end points
+  point endPoint =
+      getEndPoint(ang_in_rads, angle, input_surface->w, input_surface->h);
+
+  // endX = endY =
+  deltaX = (int)std::round(endPoint.first);
+  deltaY = (int)std::round(endPoint.second);
+
+  if (angle >= 0 && angle < 90) { // +x +y quadrant
+    startX = 0;
+    startY = 0;
+  } else if (angle >= 90 && angle < 180) { // -x +y quadrant
+    startX = input_surface->w;
+    startY = 0;
+  } else if (angle >= 180 && angle < 270) { // -x -y quadrant
+    startX = input_surface->w;
+    startY = input_surface->h;
+  } else { // +x -y quadrant
+    startX = 0;
+    startY = input_surface->h;
+  }
+
+  endX = deltaX + startX;
+  endY = deltaY + startY;
 
   LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
                                     endY, deltaX, deltaY, slope_error);
@@ -352,8 +474,10 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       double zoom_percent = image_zoom / 100.0f;
       // Display input image zoomed in to percent
       if (input_texture != NULL) {
-        displayTexture(renderer, input_texture, input_surface->w * zoom_percent,
-                       input_surface->h * zoom_percent);
+        // TODO: Renable this
+        // displayTexture(renderer, input_texture, input_surface->w *
+        // zoom_percent,
+        //                input_surface->h * zoom_percent);
       }
 
       // Display output image zoomed in to percent
