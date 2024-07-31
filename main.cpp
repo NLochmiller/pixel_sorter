@@ -188,6 +188,10 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   // Convert point queue to array of points
   point_ints *points =
       (point_ints *)calloc(sizeof(point_ints), pointQueue.size());
+  if (points == NULL) {
+    fprintf(stderr, "Unable to convert point queue to array\n");
+    return false;
+  }
   for (int i = 0; i < numPoints && !pointQueue.empty(); i++) {
     points[i] = pointQueue.front();
     pointQueue.pop();
