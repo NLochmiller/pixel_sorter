@@ -132,35 +132,29 @@ point_doubles getEndPoint(double angle, double angle_degrees, double width,
 // Generate a Bresenham's line at angle that goes from origin to any edge of the
 // rectangle. With the origin being (0, 0), the line starts at the origin, and
 // the rectangle is centered on the origin
-//
-pointQueue generateLinePointQueueFitIntoRectangle(
-    double &angle, int halfwidth, int halfheight, int &currentX, int &currentY,
-    int &startX, int &startY, int &endX, int &endY, int &deltaX, int &deltaY, double &slope_error) {
+
+pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int halfwidth,
+                                                  int halfheight,
+                                                  BresenhamsArguments &args) {
   // Generate the line
   if (angle == 360) {
     angle = 0;
   }
+  // Calculate end point
   double ang_in_rads = angle * (M_PI / 180.0f);
   point_doubles endPoint =
-    getEndPoint(ang_in_rads, angle, halfwidth, halfheight);
-  deltaX = (int)std::round(endPoint.first);
-  deltaY = (int)std::round(endPoint.second);
-  endX = deltaX + startX;
-  endY = deltaY + startY;
-
-  LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
-                                    endY, deltaX, deltaY, slope_error);
+      getEndPoint(ang_in_rads, angle, halfwidth, halfheight);
+  // Initalize arguments to go from (0,0) to calculated end point
+  args.init(0, 0, (int)std::round(endPoint.first),
+            (int)std::round(endPoint.second));
   bresenham_interpolator *interpolator =
-      LineInterpolator::get_interpolator(deltaX, deltaY);
-
-  // Add each point to a queue
+      LineInterpolator::get_interpolator(args.deltaX, args.deltaY);
+  // Add each point to output queue
   std::queue<std::pair<int, int>> points;
   do {
-
-    points.push(std::make_pair(currentX, currentY));
-    printf("thing %d %d\n", currentX, currentY);
-  } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
-                        slope_error));
+    points.push(std::make_pair(args.currentX, args.currentY));
+    printf("thing %d %d\n", args.currentX, args.currentY);
+  } while (interpolator(args));
   return points;
 }
 
@@ -188,24 +182,19 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   PixelSorter_Pixel_t *output_pixels = (uint32_t *)output_surface->pixels;
 
   // Generate the line
-  int currentX = 0, currentY = 0, startX = 0, startY = 0, endX = 0, endY = 0,
-      deltaX = 0, deltaY = 0;
-  double slope_error = 0;
-
-  pointQueue points = generateLinePointQueueFitIntoRectangle(angle, input_surface->w, input_surface->h, currentX, currentY, startX, startY, endX, endY, deltaX, deltaY, slope_error);
+  BresenhamsArguments bresenhamsArgs(0, 0);
+  pointQueue points = generateLinePointQueueFitIntoRectangle(
+      angle, input_surface->w, input_surface->h, bresenhamsArgs);
 
   /* LINE GENERATION DONE */
 
-  
-  // if (0 <= currentX && currentX < output_surface->w && 0 <= currentY &&
-  //     currentY < output_surface->h) { // if in bounds
-  //   output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
-  //       SDL_MapRGB(input_surface->format, 255, 0, 0);
-  //   // printf("(%d, %d)\n", currentX, currentY);
-  //   // Add point to a queue
-  // }
+  // Start and end coordinates for making multiple lines
+  int startX = 0;
+  int startY = 0;
+  int endX = 0;
+  int endY = 0;
 
-  // Go to specific corner for each quadrant
+  // Shift to specific corner for each quadrant
   if (angle >= 0 && angle < 90) { // +x +y quadrant
     startX = 0;
     startY = 0;
@@ -219,8 +208,9 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
     startX = 0;
     startY = input_surface->h - 1;
   }
-  endX = deltaX + startX;
-  endY = deltaY + startY;
+  // Properly set endX and endY
+  endX = bresenhamsArgs.deltaX + startX;
+  endY = bresenhamsArgs.deltaY + startY;
 
   /*
    * Now in the perspective of 1 dimension L where L is the dimension with
@@ -258,8 +248,21 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   (*endL) -= offset;
   */
 
-  // For each n starting from startN to endN, sort along that line
+  // Test code to check each point in line by drawing it to the screen
+  int size = points.size();
+  while (points.size() > 0) {
+    int x = points.front().first + startX;
+    int y = points.front().second + startY;
+    points.pop();
 
+    if (0 <= x && x < output_surface->w && 0 <= y &&
+        y < output_surface->h) { // if in bounds
+      output_pixels[TWOD_TO_1D(x, y, output_surface->w)] =
+          SDL_MapRGB(input_surface->format, 255 * points.size() / size, 0, 0);
+    }
+  }
+
+  // For each n starting from startN to endN, sort along that line
   PixelSorter::sort(input_pixels, output_pixels);
   return true;
 }
