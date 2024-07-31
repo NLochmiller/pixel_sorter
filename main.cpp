@@ -125,6 +125,12 @@ point getEndPoint(double angle, double angle_degrees, double width,
   return std::make_pair(0, 0);
 }
 
+// Temporary for ideas
+typedef struct point_int_struct {
+  int x;
+  int y;
+} point_int;
+
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel arrays
 // to pass onto it, and assembles some needed information
 bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
@@ -161,6 +167,30 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
       getEndPoint(ang_in_rads, angle, input_surface->w, input_surface->h);
   deltaX = (int)std::round(endPoint.first);
   deltaY = (int)std::round(endPoint.second);
+  endX = deltaX + startX;
+  endY = deltaY + startY;
+
+  LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
+                                    endY, deltaX, deltaY, slope_error);
+  bresenham_interpolator *interpolator =
+      LineInterpolator::get_interpolator(deltaX, deltaY);
+
+  // Add each point to a queue
+  do {
+    if (0 <= currentX && currentX < output_surface->w && 0 <= currentY &&
+        currentY < output_surface->h) {
+
+      output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
+          SDL_MapRGB(input_surface->format, 255, 0, 0);
+      // printf("(%d, %d)\n", currentX, currentY);
+      // Add point to a queue
+    }
+  } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
+                        slope_error));
+
+  /* LINE GENERATION DONE */
+
+  // Go to specific corner for each quadrant
   if (angle >= 0 && angle < 90) { // +x +y quadrant
     startX = 0;
     startY = 0;
@@ -176,29 +206,6 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   }
   endX = deltaX + startX;
   endY = deltaY + startY;
-
-  LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
-                                    endY, deltaX, deltaY, slope_error);
-
-  // Add each point to a queue
-  bresenham_interpolator *interpolator =
-      LineInterpolator::get_interpolator(deltaX, deltaY);
-
-  
-
-  do {
-    if (0 <= currentX && currentX < output_surface->w && 0 <= currentY &&
-        currentY < output_surface->h) {
-
-      output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
-          SDL_MapRGB(input_surface->format, 255, 0, 0);
-      // printf("(%d, %d)\n", currentX, currentY);
-      // Add point to a queue
-    }
-  } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
-                        slope_error));
-
-  /* LINE GENERATION DONE */
 
   /*
    * Now in the perspective of 1 dimension L where L is the dimension with
