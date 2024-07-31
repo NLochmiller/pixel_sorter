@@ -31,37 +31,23 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   // Use pointers to save on lines of code
   int *deltaL = NULL; // The max of deltaX deltaY
   int *deltaS = NULL; // The min of deltaX deltaY
-  // The two dimension indexes, for L and S respectively
+  // The index of the current line along the L dimension
   int *l = NULL;
-  int *s = NULL;
-  // // Change deltaL by deltaS where S is the dimension with a smaller delta
-  // // without changing where the center of the N lines are
+
   if (std::abs(deltaX) <= std::abs(deltaY)) { // X changes less or same as Y
     l = &x;
     maxL = width;
     deltaL = &deltaX;
     deltaS = &deltaY;
-    s = &y;
+    // Offset starting y to the appropriate side, given the lines direction
     y = (deltaY >= 0) ? 0 : height - 1;
-    // if (deltaY >= 0) {
-    //   y = 0;
-    // } else {
-    //   y = height;
-    // }
-    printf("abcdefg y %d\n", y);
   } else { // Y changes less than X
     l = &y;
     maxL = height;
     deltaL = &deltaY;
     deltaS = &deltaX;
-    // s = &x;
-    // if (deltaX >= 0) {
-    //   x = startX;
-    // } else {
-    //   x = endX;
-    // }
+    // Offset starting x to the appropriate side, given the lines direction
     x = (deltaX >= 0) ? 0 : width - 1;
-    printf("abcdefg x %d\n", x);
   }
 
   /* TODO: Disable after getting sweeping across L to work
