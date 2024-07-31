@@ -41,12 +41,14 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
     maxL = width;
     deltaL = &deltaX;
     deltaS = &deltaY;
-    // s = &y;
+    s = &y;
+    y = (deltaY >= 0) ? 0 : height - 1;
     // if (deltaY >= 0) {
-    //   y = startY;
+    //   y = 0;
     // } else {
-    //   y = endY;
+    //   y = height;
     // }
+    printf("abcdefg y %d\n", y);
   } else { // Y changes less than X
     l = &y;
     maxL = height;
@@ -58,6 +60,8 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
     // } else {
     //   x = endX;
     // }
+    x = (deltaX >= 0) ? 0 : width - 1;
+    printf("abcdefg x %d\n", x);
   }
 
   /* TODO: Disable after getting sweeping across L to work
