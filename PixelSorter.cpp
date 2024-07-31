@@ -25,18 +25,24 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
    *  + if was in range
    *    * place sorted pixels onto output
    */
-  /* TEST CODE START ====================================================== */
+
   // Test code to check each point in line by drawing it to the screen
 
+  // Starting index of the current band of sortable values
+  int bandI = 0;
+  
   for (int i = 0; i < numPoints; i++) {
-    int px = points[i].first + offsetX;
-    int py = points[i].second + offsetY;
-    if (0 <= px && px < width && 0 <= py && py < height) { // if in bounds
-      output_pixels[TWOD_TO_1D(px, py, width)] = SDL_MapRGB(
-          input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
+    int x = points[i].first + offsetX;
+    int y = points[i].second + offsetY;
+    if (!(0 <= x && x < width && 0 <= y && y < height)) {
+      continue; // point is out of bounds, move on
     }
+
+
+    // Point must be in bounds
+    output_pixels[TWOD_TO_1D(x, y, width)] =
+        SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
   }
-  /* TEST CODE END  ======================================================= */
 }
 
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
