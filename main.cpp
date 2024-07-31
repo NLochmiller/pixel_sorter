@@ -1,6 +1,7 @@
 #include <cmath>
 #include <cstdint>
 #include <math.h>
+#include <queue>
 #include <stdio.h>
 
 #include "SDL_pixels.h"
@@ -29,12 +30,14 @@
 
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
+typedef std::pair<double, double> point_doubles;
+using point_ints = std::pair<int, int>;
+using pointQueue = std::queue<point_ints>;
+
 // TODO: MOVE TO BETTER LOCATION
-
-typedef std::pair<double, double> point;
-
 // Return where two lines given points A and B intersect
-point lineLineIntersection(point A, point B, point C, point D) {
+point_doubles lineLineIntersection(point_doubles A, point_doubles B,
+                                   point_doubles C, point_doubles D) {
   // Line AB represented as a1x + b1y = c1
   double a1 = B.second - A.second;
   double b1 = A.first - B.first;
@@ -59,25 +62,26 @@ point lineLineIntersection(point A, point B, point C, point D) {
 }
 
 // Return the end point normalized (as if we start at 0,0)
-point getEndPoint(double angle, double angle_degrees, double width,
-                  double height) {
-  point topRight = std::make_pair(width, height);
-  point topLeft = std::make_pair(-width, height);
-  point botRight = std::make_pair(width, -height);
-  point botLeft = std::make_pair(-width, -height);
+point_doubles getEndPoint(double angle, double angle_degrees, double width,
+                          double height) {
+  point_doubles topRight = std::make_pair(width, height);
+  point_doubles topLeft = std::make_pair(-width, height);
+  point_doubles botRight = std::make_pair(width, -height);
+  point_doubles botLeft = std::make_pair(-width, -height);
 
-  point origin = std::make_pair(0, 0);
+  point_doubles origin = std::make_pair(0, 0);
   int length = 10; // just a test length
-  point lineEnd =
+  point_doubles lineEnd =
       std::make_pair(length * std::cos(angle), length * std::sin(angle));
 
   // Check intersection with x's
-  point posX = lineLineIntersection(origin, lineEnd, botRight, topRight);
-  point negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
+  point_doubles posX =
+      lineLineIntersection(origin, lineEnd, botRight, topRight);
+  point_doubles negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
 
   // Check intersection with y's
-  point posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
-  point negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
+  point_doubles posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
+  point_doubles negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
 #define IS_PARALLEL(_p_) (_p_.first == FLT_MAX && _p_.second == FLT_MAX)
 
   if (angle_degrees == 0 || angle_degrees == 360) {
@@ -125,11 +129,40 @@ point getEndPoint(double angle, double angle_degrees, double width,
   return std::make_pair(0, 0);
 }
 
-// Temporary for ideas
-typedef struct point_int_struct {
-  int x;
-  int y;
-} point_int;
+// Generate a Bresenham's line at angle that goes from origin to any edge of the
+// rectangle. With the origin being (0, 0), the line starts at the origin, and
+// the rectangle is centered on the origin
+//
+pointQueue generateLinePointQueueFitIntoRectangle(
+    double &angle, int halfwidth, int halfheight, int &currentX, int &currentY,
+    int &startX, int &startY, int &endX, int &endY, int &deltaX, int &deltaY, double &slope_error) {
+  // Generate the line
+  if (angle == 360) {
+    angle = 0;
+  }
+  double ang_in_rads = angle * (M_PI / 180.0f);
+  point_doubles endPoint =
+    getEndPoint(ang_in_rads, angle, halfwidth, halfheight);
+  deltaX = (int)std::round(endPoint.first);
+  deltaY = (int)std::round(endPoint.second);
+  endX = deltaX + startX;
+  endY = deltaY + startY;
+
+  LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
+                                    endY, deltaX, deltaY, slope_error);
+  bresenham_interpolator *interpolator =
+      LineInterpolator::get_interpolator(deltaX, deltaY);
+
+  // Add each point to a queue
+  std::queue<std::pair<int, int>> points;
+  do {
+
+    points.push(std::make_pair(currentX, currentY));
+    printf("thing %d %d\n", currentX, currentY);
+  } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
+                        slope_error));
+  return points;
+}
 
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel arrays
 // to pass onto it, and assembles some needed information
@@ -155,40 +188,22 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   PixelSorter_Pixel_t *output_pixels = (uint32_t *)output_surface->pixels;
 
   // Generate the line
-  if (angle == 360) {
-    angle = 0;
-  }
   int currentX = 0, currentY = 0, startX = 0, startY = 0, endX = 0, endY = 0,
       deltaX = 0, deltaY = 0;
-  double slope_error;
+  double slope_error = 0;
 
-  double ang_in_rads = angle * (M_PI / 180.0f);
-  point endPoint =
-      getEndPoint(ang_in_rads, angle, input_surface->w, input_surface->h);
-  deltaX = (int)std::round(endPoint.first);
-  deltaY = (int)std::round(endPoint.second);
-  endX = deltaX + startX;
-  endY = deltaY + startY;
-
-  LineInterpolator::init_bresenhams(currentX, currentY, startX, startY, endX,
-                                    endY, deltaX, deltaY, slope_error);
-  bresenham_interpolator *interpolator =
-      LineInterpolator::get_interpolator(deltaX, deltaY);
-
-  // Add each point to a queue
-  do {
-    if (0 <= currentX && currentX < output_surface->w && 0 <= currentY &&
-        currentY < output_surface->h) {
-
-      output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
-          SDL_MapRGB(input_surface->format, 255, 0, 0);
-      // printf("(%d, %d)\n", currentX, currentY);
-      // Add point to a queue
-    }
-  } while (interpolator(currentX, currentY, endX, endY, deltaX, deltaY,
-                        slope_error));
+  pointQueue points = generateLinePointQueueFitIntoRectangle(angle, input_surface->w, input_surface->h, currentX, currentY, startX, startY, endX, endY, deltaX, deltaY, slope_error);
 
   /* LINE GENERATION DONE */
+
+  
+  // if (0 <= currentX && currentX < output_surface->w && 0 <= currentY &&
+  //     currentY < output_surface->h) { // if in bounds
+  //   output_pixels[TWOD_TO_1D(currentX, currentY, output_surface->w)] =
+  //       SDL_MapRGB(input_surface->format, 255, 0, 0);
+  //   // printf("(%d, %d)\n", currentX, currentY);
+  //   // Add point to a queue
+  // }
 
   // Go to specific corner for each quadrant
   if (angle >= 0 && angle < 90) { // +x +y quadrant
