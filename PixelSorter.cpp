@@ -45,11 +45,20 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
     int pixelIndex = TWOD_TO_1D(x, y, width); //
     PixelSorter_Pixel_t pixel = input_pixels[pixelIndex];
 
-    double percent = converter(r, g, b);
+    SDL_GetRGB(pixel, input_test->format, &r, &g, &b);
 
-    output_pixels[pixelIndex] =
-        SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
+    // Divide by 255 to fit into the 0 to 1 range expected by converters
+    double percent = converter(r / 255.0, g / 255.0, b / 255.0);
+
+    if (percent < 0 || percent > 1) {
+      fprintf(stderr, "bad percent at (%d, %d), rgb %d %d %d, p %f\n", x, y, r,
+              g, b, percent);
+    }
+
+    // output_pixels[pixelIndex] =
+    // SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
   }
+  printf("good\n");
 }
 
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
