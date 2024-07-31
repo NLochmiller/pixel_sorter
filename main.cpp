@@ -160,7 +160,8 @@ pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int halfwidth,
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel arrays
 // to pass onto it, and assembles some needed information
 bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
-                  SDL_Surface *&output_surface, double angle) {
+                  SDL_Surface *&output_surface, double angle, double valueMin,
+                  double valueMax) {
   if (input_surface == NULL || output_surface == NULL) {
     return false;
   }
@@ -220,15 +221,10 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   endX = bresenhamsArgs.deltaX + startX;
   endY = bresenhamsArgs.deltaY + startY;
 
-  // int width = input_surface->w;
-  // int height = input_surface->h;
-  // SDL_Surface* input_test = input_surface;
-
-  // printf("huh\n");
   // For each n starting from startN to endN, sort along that line
   PixelSorter::sort(input_pixels, output_pixels, points, numPoints,
                     input_surface->w, input_surface->h, startX, startY, endX,
-                    endY, input_surface);
+                    endY, valueMin / 100, valueMax / 100, input_surface);
 
   free(points);
   return true;
@@ -353,9 +349,10 @@ int main(int, char **) {
     // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
-      // input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
-      input_surface =
-          SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 8, DEFAULT_PIXEL_FORMAT);
+      input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
+      // TODO: Remove test code
+      // input_surface =
+      //     SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 8, DEFAULT_PIXEL_FORMAT);
 
       if (input_surface == NULL) {
         // TODO cancel file broser exit on error
@@ -478,7 +475,8 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       // Start sorting
       if (ImGui::Button("Sort")) {
-        sort_wrapper(renderer, input_surface, output_surface, angle);
+        sort_wrapper(renderer, input_surface, output_surface, angle,
+                     min_percent, max_percent);
         output_texture =
             updateTexture(renderer, output_surface, output_texture);
       }
@@ -492,10 +490,8 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       double zoom_percent = image_zoom / 100.0f;
       // Display input image zoomed in to percent
       if (input_texture != NULL) {
-        // TODO: Renable this
-        // displayTexture(renderer, input_texture, input_surface->w *
-        // zoom_percent,
-        //                input_surface->h * zoom_percent);
+        displayTexture(renderer, input_texture, input_surface->w * zoom_percent,
+                       input_surface->h * zoom_percent);
       }
 
       // Display output image zoomed in to percent

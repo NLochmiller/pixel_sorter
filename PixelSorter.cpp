@@ -5,13 +5,17 @@
 #include "global.h"
 #include <algorithm>
 #include <cstdio>
+#include <unordered_map>
+
+// How many unique values can there be, also how precise are our values
+#define PRECISION 255
 
 // Private helper to sort an individual line
 void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
                   PixelSorter_Pixel_t *&output_pixels, point_ints *points,
                   int numPoints, int width, int height, int deltaX, int deltaY,
-                  int offsetX, int offsetY, SDL_Surface *input_test,
-                  int goff = 0) {
+                  int offsetX, int offsetY, int valueMin, int valueMax,
+                  SDL_Surface *input_test, int goff = 0) {
   /*
    * For each line:
    *  while out of bounds: move along line
@@ -33,7 +37,8 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
   // Starting index of the current band of sortable values
   int bandI = 0;
   uint8_t r, g, b;
-  ColorConverter *converter = &ColorConversion::lightness;
+  ColorConverter *converter = &ColorConversion::red;
+  std::unordered_map<int, int> valueMap;
 
   for (int i = 0; i < numPoints; i++) {
     int x = points[i].first + offsetX;
@@ -48,24 +53,27 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
     SDL_GetRGB(pixel, input_test->format, &r, &g, &b);
 
     // Divide by 255 to fit into the 0 to 1 range expected by converters
-    double percent = converter(r / 255.0, g / 255.0, b / 255.0);
+    int percent =
+        std::round(PRECISION * converter(((double)r) / 255.0,
+                                                    ((double)g) / 255.0,
+                                                    ((double)b) / 255.0));
 
-    if (percent < 0 || percent > 1) {
-      fprintf(stderr, "bad percent at (%d, %d), rgb %d %d %d, p %f\n", x, y, r,
-              g, b, percent);
+    if (percent < 0 || percent > PRECISION) {
+      fprintf(stderr, "Bad percent at (%d, %d), rgb %d %d %d, p %f, %d/%d\n", x,
+            y, r, g, b, 1.0f * percent / PRECISION, percent, PRECISION);
     }
 
     // output_pixels[pixelIndex] =
     // SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
   }
-  printf("good\n");
+  // printf("good\n");
 }
 
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
                        PixelSorter_Pixel_t *&output_pixels, point_ints *points,
                        int numPoints, int width, int height, int startX,
-                       int startY, int endX, int endY,
-                       SDL_Surface *input_test) {
+                       int startY, int endX, int endY, double valueMin,
+                       double valueMax, SDL_Surface *input_test) {
   int deltaX = endX - startX;
   int deltaY = endY - startY;
 
@@ -86,7 +94,6 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   int minL = 0; // The minimum value of L to sort with
   int maxL = 0; // The maximum value of L to sort with
   // Use pointers to save on lines of code
-  int *deltaL = NULL; // The max of deltaX deltaY
   int *deltaS = NULL; // The min of deltaX deltaY
   // The index of the current line along the L dimension
   int *l = NULL;
@@ -94,14 +101,12 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   if (std::abs(deltaX) <= std::abs(deltaY)) { // X changes less or same as Y
     l = &x;
     maxL = width;
-    deltaL = &deltaX;
     deltaS = &deltaY;
     // Offset starting y to the appropriate side, given the lines direction
     y = (deltaY >= 0) ? 0 : height - 1;
   } else { // Y changes less than X
     l = &y;
     maxL = height;
-    deltaL = &deltaY;
     deltaS = &deltaX;
     // Offset starting x to the appropriate side, given the lines direction
     x = (deltaX >= 0) ? 0 : width - 1;
@@ -116,7 +121,8 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   // For each line along l, increase it by 1
   for (*l = minL; *l < maxL; (*l)++) {
     sortEachLine(input_pixels, output_pixels, points, numPoints, width, height,
-                 deltaX, deltaY, x, y, input_test,
+                 deltaX, deltaY, x, y, valueMin * PRECISION,
+                 valueMax * PRECISION, input_test,
                  255 * (maxL + minL - *l) / maxL);
   }
 }
