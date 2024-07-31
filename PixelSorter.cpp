@@ -50,17 +50,16 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
     x = (deltaX >= 0) ? 0 : width - 1;
   }
 
-  /* TODO: Disable after getting sweeping across L to work
+  // TODO: Disable after getting sweeping across L to work
   // Extend start and end by offset, causing the deltaL to grow by 2*deltaS
   int offset = std::abs(*deltaS);
-  (*minL) -= offset;
-  (*maxL) += offset;
-  */
+  minL -= offset;
+  maxL += offset;
 
   printf("start(%d %d) | end(%d %d) | l m%d M%d D%d | s D%d\n", startX, startY,
          endX, endY, minL, maxL, *deltaL, *deltaS);
   // For each line along l, increase it by 1
-  for (; *l < maxL; (*l)++) {
+  for (*l = minL; *l < maxL; (*l)++) {
     printf("%d %d\n", x, y);
 
     /*
@@ -89,9 +88,11 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
       if (0 <= px && px < width && 0 <= py && py < height) { // if in bounds
         output_pixels[TWOD_TO_1D(px, py, width)] =
             SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints,
-                       255 * (maxL - *l) / maxL, 0);
+                       255 * (maxL +minL- *l) / maxL, 0);
       }
     }
     /* TEST CODE END  ======================================================= */
   }
+
+  printf("min max %d %d, l %d x %d y %d\n", minL, maxL, *l, x, y);
 }
