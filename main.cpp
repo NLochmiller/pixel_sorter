@@ -221,9 +221,6 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   endX = bresenhamsArgs.deltaX + startX;
   endY = bresenhamsArgs.deltaY + startY;
 
-  int deltaX = endX - startX;
-  int deltaY = endY - startY;
-
   // int width = input_surface->w;
   // int height = input_surface->h;
   // SDL_Surface* input_test = input_surface;
@@ -232,7 +229,7 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   // For each n starting from startN to endN, sort along that line
   PixelSorter::sort(input_pixels, output_pixels, points, numPoints,
                     input_surface->w, input_surface->h, startX, startY, endX,
-                    endY, deltaX, deltaY, input_surface);
+                    endY, input_surface);
 
   free(points);
   return true;
