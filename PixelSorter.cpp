@@ -4,6 +4,41 @@
 #include <algorithm>
 #include <cstdio>
 
+// Private helper to sort an individual line
+void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
+                  PixelSorter_Pixel_t *&output_pixels, point_ints *points,
+                  int numPoints, int width, int height, int deltaX, int deltaY,
+                  int offsetX, int offsetY, SDL_Surface *input_test,
+                  int g = 0) {
+  /*
+   * For each line:
+   *  while out of bounds: move along line
+   *  while in bounds:
+   *     + While in bounds
+   *    * if pixel outside range
+   *      - if last was in range:
+   *        - place sorted pixels onto output
+   *      - copy pixel from input to output
+   *    * if pixel in range
+   *      - add pixel to value map
+   *    * move to next spot
+   *  + if was in range
+   *    * place sorted pixels onto output
+   */
+  /* TEST CODE START ====================================================== */
+  // Test code to check each point in line by drawing it to the screen
+
+  for (int i = 0; i < numPoints; i++) {
+    int px = points[i].first + offsetX;
+    int py = points[i].second + offsetY;
+    if (0 <= px && px < width && 0 <= py && py < height) { // if in bounds
+      output_pixels[TWOD_TO_1D(px, py, width)] = SDL_MapRGB(
+          input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
+    }
+  }
+  /* TEST CODE END  ======================================================= */
+}
+
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
                        PixelSorter_Pixel_t *&output_pixels, point_ints *points,
                        int numPoints, int width, int height, int startX,
@@ -56,43 +91,10 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   minL -= offset;
   maxL += offset;
 
-  printf("start(%d %d) | end(%d %d) | l m%d M%d D%d | s D%d\n", startX, startY,
-         endX, endY, minL, maxL, *deltaL, *deltaS);
   // For each line along l, increase it by 1
   for (*l = minL; *l < maxL; (*l)++) {
-    printf("%d %d\n", x, y);
-
-    /*
-     * For each line:
-     *  while out of bounds: move along line
-     *  while in bounds:
-     *     + While in bounds
-     *    * if pixel outside range
-     *      - if last was in range:
-     *        - place sorted pixels onto output
-     *      - copy pixel from input to output
-     *    * if pixel in range
-     *      - add pixel to value map
-     *    * move to next spot
-     *  + if was in range
-     *    * place sorted pixels onto output
-     */
-    /* TEST CODE START ====================================================== */
-    // Test code to check each point in line by drawing it to the screen
-
-    for (int i = 0; i < numPoints; i++) {
-
-      int px = points[i].first + x;
-      int py = points[i].second + y;
-      printf("(%d %d)\n", px, py);
-      if (0 <= px && px < width && 0 <= py && py < height) { // if in bounds
-        output_pixels[TWOD_TO_1D(px, py, width)] =
-            SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints,
-                       255 * (maxL +minL- *l) / maxL, 0);
-      }
-    }
-    /* TEST CODE END  ======================================================= */
+    sortEachLine(input_pixels, output_pixels, points, numPoints, width, height,
+                 deltaX, deltaY, x, y, input_test,
+                 255 * (maxL + minL - *l) / maxL);
   }
-
-  printf("min max %d %d, l %d x %d y %d\n", minL, maxL, *l, x, y);
 }

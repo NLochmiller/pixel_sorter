@@ -153,7 +153,6 @@ pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int halfwidth,
   std::queue<std::pair<int, int>> points;
   do {
     points.push(std::make_pair(args.currentX, args.currentY));
-    printf("thing %d %d\n", args.currentX, args.currentY);
   } while (interpolator(args));
   return points;
 }
@@ -325,11 +324,6 @@ int main(int, char **) {
   std::filesystem::path output_path;
   SDL_Texture *input_texture = NULL;
   SDL_Texture *output_texture = NULL;
-
-  // TODO: REMOVE_START
-  // This is just to get the compiler to be quiet
-  fprintf(stderr, "quiet compiler %p %p\n", output_surface, output_texture);
-  // TODO: REMOVE_END,
 
   bool done = false;
   /* === START OF MAIN LOOP ================================================= */
