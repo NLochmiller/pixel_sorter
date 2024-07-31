@@ -221,58 +221,18 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   endX = bresenhamsArgs.deltaX + startX;
   endY = bresenhamsArgs.deltaY + startY;
 
-  /*
-   * Now in the perspective of 1 dimension L where L is the dimension with
-   * greater change, that is:
-   *   if |deltaX| >= |deltaY|, L = X.
-   *   if |deltaX| <  |deltaY|, L - Y.
-   *
-   * There is also another dimension S where S is the opposite of L, that is:
-   *   if L = X, S = Y.
-   *   If L = Y, S = X
-   */
-  /* Bad code that would affect how line works, offsets it
-  // Use pointers to save on lines of code
-  int *startL = NULL;
-  int *endL = NULL;
-  int *deltaL = NULL;
-  int *deltaS = NULL;
+  int deltaX = endX - startX;
+  int deltaY = endY - startY;
 
-  // Change deltaL by deltaS where S is the dimension with a smaller delta
-  // without changing where the center of the N lines are
-  if (std::abs(deltaX) >= std::abs(deltaY)) { // X changes more than Y or same
-    startL = &startX;
-    endL = &endX;
-    deltaL = &deltaX;
-    deltaS = &deltaY;
-  } else { // Y changes more than X
-    startL = &startY;
-    endL = &endY;
-    deltaL = &deltaY;
-    deltaS = &deltaX;
-  }
-  // Extend start and end by offset, causing the deltaL to grow by 2*deltaS
-  int offset = ((*deltaL >= 0) ? *deltaS : -*deltaS);
-  (*startL) += offset;
-  (*endL) -= offset;
-  */
+  // int width = input_surface->w;
+  // int height = input_surface->h;
+  // SDL_Surface* input_test = input_surface;
 
-  /* TEST CODE START ======================================================== */
-  // Test code to check each point in line by drawing it to the screen
-  for (int i = 0; i < numPoints; i++) {
-    int x = points[i].first + startX;
-    int y = points[i].second + startY;
-
-    if (0 <= x && x < output_surface->w && 0 <= y &&
-        y < output_surface->h) { // if in bounds
-      output_pixels[TWOD_TO_1D(x, y, output_surface->w)] = SDL_MapRGB(
-          input_surface->format, 255 * (numPoints - i) / numPoints, 0, 0);
-    }
-  }
-  /* TEST CODE END  ========================================================= */
-
+  // printf("huh\n");
   // For each n starting from startN to endN, sort along that line
-  PixelSorter::sort(input_pixels, output_pixels);
+  PixelSorter::sort(input_pixels, output_pixels, points, numPoints,
+                    input_surface->w, input_surface->h, startX, startY, endX,
+                    endY, deltaX, deltaY, input_surface);
 
   free(points);
   return true;
