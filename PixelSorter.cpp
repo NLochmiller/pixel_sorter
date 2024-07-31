@@ -1,4 +1,6 @@
 #include "PixelSorter.hpp"
+#include "ColorConversion.hpp"
+#include "SDL_pixels.h"
 #include "SDL_surface.h"
 #include "global.h"
 #include <algorithm>
@@ -9,7 +11,7 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
                   PixelSorter_Pixel_t *&output_pixels, point_ints *points,
                   int numPoints, int width, int height, int deltaX, int deltaY,
                   int offsetX, int offsetY, SDL_Surface *input_test,
-                  int g = 0) {
+                  int goff = 0) {
   /*
    * For each line:
    *  while out of bounds: move along line
@@ -30,17 +32,22 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
 
   // Starting index of the current band of sortable values
   int bandI = 0;
-  
+  uint8_t r, g, b;
+  ColorConverter *converter = &ColorConversion::lightness;
+
   for (int i = 0; i < numPoints; i++) {
     int x = points[i].first + offsetX;
     int y = points[i].second + offsetY;
     if (!(0 <= x && x < width && 0 <= y && y < height)) {
       continue; // point is out of bounds, move on
     }
-
-
     // Point must be in bounds
-    output_pixels[TWOD_TO_1D(x, y, width)] =
+    int pixelIndex = TWOD_TO_1D(x, y, width); //
+    PixelSorter_Pixel_t pixel = input_pixels[pixelIndex];
+
+    double percent = converter(r, g, b);
+
+    output_pixels[pixelIndex] =
         SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
   }
 }
