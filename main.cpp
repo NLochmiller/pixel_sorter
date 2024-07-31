@@ -175,18 +175,23 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
 
     SDL_FillRect(output_surface, &whole_surf_rect, (Uint32)background_color);
   }
-
   // While I would rather cast and pass directly, must do this so that the
   // compiler will stop complaining
   PixelSorter_Pixel_t *input_pixels = (uint32_t *)input_surface->pixels;
   PixelSorter_Pixel_t *output_pixels = (uint32_t *)output_surface->pixels;
-
   // Generate the line
   BresenhamsArguments bresenhamsArgs(0, 0);
-  pointQueue points = generateLinePointQueueFitIntoRectangle(
+  pointQueue pointQueue = generateLinePointQueueFitIntoRectangle(
       angle, input_surface->w, input_surface->h, bresenhamsArgs);
+  int numPoints = pointQueue.size();
 
-  /* LINE GENERATION DONE */
+  // Convert point queue to array of points
+  point_ints *points =
+      (point_ints *)calloc(sizeof(point_ints), pointQueue.size());
+  for (int i = 0; i < numPoints && !pointQueue.empty(); i++) {
+    points[i] = pointQueue.front();
+    pointQueue.pop();
+  }
 
   // Start and end coordinates for making multiple lines
   int startX = 0;
@@ -222,7 +227,7 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
    *   if L = X, S = Y.
    *   If L = Y, S = X
    */
-  /* Bad code that would affect how line works
+  /* Bad code that would affect how line works, offsets it
   // Use pointers to save on lines of code
   int *startL = NULL;
   int *endL = NULL;
@@ -248,22 +253,24 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   (*endL) -= offset;
   */
 
+  /* TEST CODE START ======================================================== */
   // Test code to check each point in line by drawing it to the screen
-  int size = points.size();
-  while (points.size() > 0) {
-    int x = points.front().first + startX;
-    int y = points.front().second + startY;
-    points.pop();
+  for (int i = 0; i < numPoints; i++) {
+    int x = points[i].first + startX;
+    int y = points[i].second + startY;
 
     if (0 <= x && x < output_surface->w && 0 <= y &&
         y < output_surface->h) { // if in bounds
-      output_pixels[TWOD_TO_1D(x, y, output_surface->w)] =
-          SDL_MapRGB(input_surface->format, 255 * points.size() / size, 0, 0);
+      output_pixels[TWOD_TO_1D(x, y, output_surface->w)] = SDL_MapRGB(
+          input_surface->format, 255 * (numPoints - i) / numPoints, 0, 0);
     }
   }
+  /* TEST CODE END  ========================================================= */
 
   // For each n starting from startN to endN, sort along that line
   PixelSorter::sort(input_pixels, output_pixels);
+
+  free(points);
   return true;
 }
 
