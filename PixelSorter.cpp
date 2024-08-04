@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <unordered_map>
+#include <vector>
 
 // How many unique values can there be, also how precise are our values
 #define PRECISION 255
@@ -35,38 +36,56 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
   // Test code to check each point in line by drawing it to the screen
 
   // Starting index of the current band of sortable values
-  int bandI = 0;
+  int bandStartIndex = 0;
   uint8_t r, g, b;
-  ColorConverter *converter = &ColorConversion::red;
-  std::unordered_map<int, int> valueMap;
-
-  for (int i = 0; i < numPoints; i++) {
-    int x = points[i].first + offsetX;
-    int y = points[i].second + offsetY;
+  ColorConverter *converter = &ColorConversion::red; // TODO: make a variable
+  std::unordered_map<Count_t, std::vector<PixelSorter_Pixel_t>> valueMap;
+  bool wasLastInBand = false; // if the last pixel was in a band
+  for (int lineIndex = 0; lineIndex < numPoints; lineIndex++) {
+    int x = points[lineIndex].first + offsetX;
+    int y = points[lineIndex].second + offsetY;
     if (!(0 <= x && x < width && 0 <= y && y < height)) {
-      continue; // point is out of bounds, move on
+      if (wasLastInBand) {
+        // TODO: Sort from bandStartIndex to lineIndex - 1
+      }
+      continue; // point is out of bounds, move on to next point
     }
-    // Point must be in bounds
+    /* Point must be in bounds */
     int pixelIndex = TWOD_TO_1D(x, y, width); //
     PixelSorter_Pixel_t pixel = input_pixels[pixelIndex];
-
     SDL_GetRGB(pixel, input_test->format, &r, &g, &b);
-
     // Divide by 255 to fit into the 0 to 1 range expected by converters
-    int percent =
-        std::round(PRECISION * converter(((double)r) / 255.0,
-                                                    ((double)g) / 255.0,
-                                                    ((double)b) / 255.0));
-
-    if (percent < 0 || percent > PRECISION) {
-      fprintf(stderr, "Bad percent at (%d, %d), rgb %d %d %d, p %f, %d/%d\n", x,
-            y, r, g, b, 1.0f * percent / PRECISION, percent, PRECISION);
+    Count_t percent = std::round(PRECISION * converter(((double)r) / 255.0,
+                                                       ((double)g) / 255.0,
+                                                       ((double)b) / 255.0));
+    if (percent < 0 || percent > PRECISION) { // Sanity check
+      fprintf(stderr, "Bad percent at (%d, %d), rgb %d %d %d, p %f, %ld/%d\n",
+              x, y, r, g, b, 1.0f * percent / PRECISION, percent, PRECISION);
     }
 
-    // output_pixels[pixelIndex] =
-    // SDL_MapRGB(input_test->format, 255 * (numPoints - i) / numPoints, g, 0);
+    // A band is a contiguous list of pixels that are within the min max values
+    bool inBand = valueMin <= percent && valueMax >= percent;
+    // State: out of band
+    if (!inBand) {
+      // Copy input to output
+      output_pixels[pixelIndex] = input_pixels[pixelIndex];
+      if (wasLastInBand) { // If transitioned out of a bad, sort the band
+        // TODO: Sort the band from bandStartIndex to lineIndex - 1
+      }
+      wasLastInBand = false;
+    } else {
+      if (!wasLastInBand) {         // If it is the start of a band
+        bandStartIndex = lineIndex; // Remember starting index
+      }
+      // Add current pixel to value map
+      valueMap[percent].push_back(input_pixels[pixelIndex]);
+      wasLastInBand = true;
+    }
   }
-  // printf("good\n");
+  // If was in a band at the end of the line, we must sort
+  if (wasLastInBand) {
+    // TODO: Sort from bandStartIndex to numPoints - 1
+  }
 }
 
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
