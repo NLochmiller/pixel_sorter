@@ -8,6 +8,9 @@
 typedef std::pair<int, int> point_ints;
 // By default, assumes format
 typedef uint32_t PixelSorter_Pixel_t;
+typedef uint8_t PixelSorter_value_t;
+#define PIXELSORTER_VALUE_T_MAX UINT8_MAX
+#define PRECISION UINT8_MAX
 typedef long Count_t;
 
 namespace PixelSorter {

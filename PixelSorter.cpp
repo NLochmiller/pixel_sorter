@@ -4,12 +4,71 @@
 #include "SDL_surface.h"
 #include "global.h"
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
+#include <sys/types.h>
 #include <unordered_map>
 #include <vector>
 
 // How many unique values can there be, also how precise are our values
-#define PRECISION 255
+#define COUNT_T long
+
+#define BOOL2STR(_bool_) (_bool_) ? "true" : "false"
+
+// indexes
+
+void sortBand(PixelSorter_Pixel_t *&input_pixels,
+              PixelSorter_Pixel_t *&output_pixels, PixelSorter_value_t *values,
+              int *pixelIndexes, int numPoints, int width, int height,
+              int bandStartIndex, int bandEndIndex) {
+  static const COUNT_T countLen = PRECISION + 1;
+  // Count will store the count of each number
+  COUNT_T *count = (COUNT_T *)calloc(countLen, sizeof(COUNT_T));
+  if (count == NULL) {
+    fprintf(stderr, "Could not create a count array. Image may be too big\n");
+    exit(-3);
+  }
+  COUNT_T lineIndex = bandStartIndex;
+  // printf("line index = %d\n", bandStartIndex);
+  // printf("pixelIndexes %s\n", BOOL2STR(pixelIndexes == NULL));
+  // printf("values null? %s\n", BOOL2STR(values == NULL));
+  // Store count of each value
+  for (lineIndex = bandStartIndex; lineIndex < bandEndIndex; lineIndex++) {
+    int pixelIndex = pixelIndexes[lineIndex];
+    PixelSorter_value_t value = values[pixelIndex];
+    (count[value])++;
+  }
+
+  // Change count[i] so that count[i] now contains actual
+  // position of this value in output surface
+  for (int i = 1; i <= PRECISION; i++) {
+    count[lineIndex] += count[lineIndex - 1];
+  }
+
+  for (lineIndex = bandStartIndex; lineIndex < bandEndIndex; lineIndex++) {
+    int pixelIndex = pixelIndexes[lineIndex];
+
+    // outPixels[w*(n - (count[values[i * w]]))] = inPixels[i];
+
+    int x = pixelIndex % width;
+    int y = pixelIndex / width;
+    if (!(x >= 0 && x < width && y >= 0 && y < height)) {
+      fprintf(stderr, "BAD COORDS %d %d\n", x, y);
+    }
+    printf("\t\tindex[%d] = (%d,%d)\n", pixelIndex, x, y);
+
+    int outputLineIndex = lineIndex + (count[values[pixelIndex]] - 1);
+    output_pixels[pixelIndexes[outputLineIndex]] = input_pixels[pixelIndex];
+    (count[values[pixelIndex]])--;
+    // count[values[]]
+    // output_pixels[count[values[lineIndex]]] = input_pixels[]
+    // count[values[i* w]]--;
+
+    // Copy each pixel
+    // output_pixels[pixelIndex] = input_pixels[pixelIndex];
+  }
+  free(count);
+}
 
 // Private helper to sort an individual line
 void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
@@ -38,29 +97,39 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
   // Starting index of the current band of sortable values
   int bandStartIndex = 0;
   uint8_t r, g, b;
-  ColorConverter *converter = &ColorConversion::red; // TODO: make a variable
-  std::unordered_map<Count_t, std::vector<PixelSorter_Pixel_t>> valueMap;
-  bool wasLastInBand = false; // if the last pixel was in a band
+  ColorConverter *converter =
+      &ColorConversion::maximum;              // TODO: make a variable
+  PixelSorter_value_t values[width * height]; // pixelIndex to value
+  bool wasLastInBand = false;                 // if the last pixel was in a band
+  int pixelIndexes[numPoints]; // Conversion map from lineIndex to pixelIndex
+
   for (int lineIndex = 0; lineIndex < numPoints; lineIndex++) {
     int x = points[lineIndex].first + offsetX;
     int y = points[lineIndex].second + offsetY;
-    if (!(0 <= x && x < width && 0 <= y && y < height)) {
+    int pixelIndex = TWOD_TO_1D(x, y, width);
+
+    pixelIndexes[lineIndex] = pixelIndex;
+    if (!(0 <= x && x < width && 0 <= y && y < height)) { // Check for outside
       if (wasLastInBand) {
         // TODO: Sort from bandStartIndex to lineIndex - 1
+        printf("\texit band, leaving image\n");
+        sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
+                 width, height, bandStartIndex, lineIndex - 1);
       }
+      wasLastInBand = false;
       continue; // point is out of bounds, move on to next point
     }
     /* Point must be in bounds */
-    int pixelIndex = TWOD_TO_1D(x, y, width); //
+
     PixelSorter_Pixel_t pixel = input_pixels[pixelIndex];
     SDL_GetRGB(pixel, input_test->format, &r, &g, &b);
     // Divide by 255 to fit into the 0 to 1 range expected by converters
-    Count_t percent = std::round(PRECISION * converter(((double)r) / 255.0,
-                                                       ((double)g) / 255.0,
-                                                       ((double)b) / 255.0));
+    PixelSorter_value_t percent = std::round(
+        PRECISION * converter(((double)r) / 255.0, ((double)g) / 255.0,
+                              ((double)b) / 255.0));
     if (percent < 0 || percent > PRECISION) { // Sanity check
-      fprintf(stderr, "Bad percent at (%d, %d), rgb %d %d %d, p %f, %ld/%d\n",
-              x, y, r, g, b, 1.0f * percent / PRECISION, percent, PRECISION);
+      fprintf(stderr, "Bad percent at (%d, %d), rgb %d %d %d, p %f, %d/%d\n", x,
+              y, r, g, b, 1.0f * percent / PRECISION, percent, PRECISION);
     }
 
     // A band is a contiguous list of pixels that are within the min max values
@@ -68,23 +137,30 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
     // State: out of band
     if (!inBand) {
       // Copy input to output
-      output_pixels[pixelIndex] = input_pixels[pixelIndex];
+      output_pixels[pixelIndex] = SDL_MapRGB(input_test->format, 0, 255, 0);
+      // input_pixels[pixelIndex];
       if (wasLastInBand) { // If transitioned out of a bad, sort the band
         // TODO: Sort the band from bandStartIndex to lineIndex - 1
+        printf("\texit band, in image\n");
+        sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
+                 width, height, bandStartIndex, lineIndex);
       }
       wasLastInBand = false;
     } else {
       if (!wasLastInBand) {         // If it is the start of a band
         bandStartIndex = lineIndex; // Remember starting index
       }
-      // Add current pixel to value map
-      valueMap[percent].push_back(input_pixels[pixelIndex]);
+      // Add current pixel value to values
+      values[pixelIndex] = percent;
       wasLastInBand = true;
     }
   }
   // If was in a band at the end of the line, we must sort
   if (wasLastInBand) {
     // TODO: Sort from bandStartIndex to numPoints - 1
+    printf("\texit band, last pixel\n");
+    sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
+             width, height, bandStartIndex, numPoints - 1);
   }
 }
 
@@ -139,6 +215,7 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
 
   // For each line along l, increase it by 1
   for (*l = minL; *l < maxL; (*l)++) {
+    printf("Line # %d\n", (*l));
     sortEachLine(input_pixels, output_pixels, points, numPoints, width, height,
                  deltaX, deltaY, x, y, valueMin * PRECISION,
                  valueMax * PRECISION, input_test,
