@@ -43,7 +43,7 @@ void sortBand(PixelSorter_Pixel_t *&input_pixels,
   // Change count[i] so that count[i] now contains actual
   // position of this value in output surface
   for (int i = 1; i <= PRECISION; i++) {
-    count[lineIndex] += count[lineIndex - 1];
+    (count[i]) += (count[i - 1]);
   }
 
   for (lineIndex = bandStartIndex; lineIndex < bandEndIndex; lineIndex++) {
@@ -56,11 +56,21 @@ void sortBand(PixelSorter_Pixel_t *&input_pixels,
     if (!(x >= 0 && x < width && y >= 0 && y < height)) {
       fprintf(stderr, "BAD COORDS %d %d\n", x, y);
     }
-    printf("\t\tindex[%d] = (%d,%d) = %d\n", pixelIndex, x, y, values[pixelIndex]);
 
-    int outputLineIndex = lineIndex + (count[values[pixelIndex]] - 1);
+
+    int outputLineIndex = bandStartIndex + (count[values[pixelIndex]] - 1);
+    int ox = pixelIndexes[outputLineIndex] % width;
+    int oy = pixelIndexes[outputLineIndex] / width;
+    printf("\t\tout[%d | %d, %d] = \tinp[%d | %d, %d] \t|| v%d c%ld\n",
+           outputLineIndex, ox, oy, pixelIndex, x, y, values[pixelIndex], count[values[pixelIndex]]);
+    // printf("\t\tindex[%d] = (%d,%d) = %d\n", pixelIndex, x, y, values[pixelIndex]);
+    
+    if (pixelIndexes[outputLineIndex] == pixelIndex) {
+      // printf("input output indeces same\n");
+    }
     output_pixels[pixelIndexes[outputLineIndex]] = input_pixels[pixelIndex];
     (count[values[pixelIndex]])--;
+    // printf("\t\tout
     // count[values[]]
     // output_pixels[count[values[lineIndex]]] = input_pixels[]
     // count[values[i* w]]--;
