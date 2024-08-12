@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <sys/types.h>
 #include <unordered_map>
 #include <vector>
@@ -55,7 +56,7 @@ void sortBand(PixelSorter_Pixel_t *&input_pixels,
     if (!(x >= 0 && x < width && y >= 0 && y < height)) {
       fprintf(stderr, "BAD COORDS %d %d\n", x, y);
     }
-    printf("\t\tindex[%d] = (%d,%d)\n", pixelIndex, x, y);
+    printf("\t\tindex[%d] = (%d,%d) = %d\n", pixelIndex, x, y, values[pixelIndex]);
 
     int outputLineIndex = lineIndex + (count[values[pixelIndex]] - 1);
     output_pixels[pixelIndexes[outputLineIndex]] = input_pixels[pixelIndex];
@@ -97,11 +98,12 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
   // Starting index of the current band of sortable values
   int bandStartIndex = 0;
   uint8_t r, g, b;
-  ColorConverter *converter =
-      &ColorConversion::maximum;              // TODO: make a variable
+  // TODO: make a variable
+  ColorConverter *converter = &(ColorConversion::maximum);
   PixelSorter_value_t values[width * height]; // pixelIndex to value
   bool wasLastInBand = false;                 // if the last pixel was in a band
-  int pixelIndexes[numPoints]; // Conversion map from lineIndex to pixelIndex
+  // Conversion map from lineIndex to pixelIndex-
+  int *pixelIndexes = (int *)calloc(numPoints, sizeof(int));
 
   for (int lineIndex = 0; lineIndex < numPoints; lineIndex++) {
     int x = points[lineIndex].first + offsetX;
@@ -114,7 +116,7 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
         // TODO: Sort from bandStartIndex to lineIndex - 1
         printf("\texit band, leaving image\n");
         sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
-                 width, height, bandStartIndex, lineIndex - 1);
+                 width, height, bandStartIndex, lineIndex);
       }
       wasLastInBand = false;
       continue; // point is out of bounds, move on to next point
@@ -162,6 +164,7 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
     sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
              width, height, bandStartIndex, numPoints - 1);
   }
+  free(pixelIndexes);
 }
 
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
