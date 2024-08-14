@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <math.h>
@@ -70,7 +71,9 @@ point_doubles getEndPoint(double angle, double angle_degrees, double width,
   point_doubles botLeft = std::make_pair(-width, -height);
 
   point_doubles origin = std::make_pair(0, 0);
-  int length = 10; // just a test length
+  // Since the diagonal line is length sqrt(width^2 + height^2), this is sure
+  // to be long enough, while still being fast enough
+  int length = (width * width + height * height);
   point_doubles lineEnd =
       std::make_pair(length * std::cos(angle), length * std::sin(angle));
 
@@ -84,6 +87,7 @@ point_doubles getEndPoint(double angle, double angle_degrees, double width,
   point_doubles negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
 #define IS_PARALLEL(_p_) (_p_.first == FLT_MAX && _p_.second == FLT_MAX)
 
+  // If angle is a perfect quadrant
   if (angle_degrees == 0 || angle_degrees == 360) {
     return std::make_pair(width, 0); // Right +x, 0y
   } else if (angle_degrees == 90) {
@@ -92,7 +96,21 @@ point_doubles getEndPoint(double angle, double angle_degrees, double width,
     return std::make_pair(-width, 0); // Left -x, 0y
   } else if (angle_degrees == 270) {
     return std::make_pair(0, -height); // Down 0x, -y
-  } else if (angle_degrees >= 0 && angle_degrees < 90) {
+  }
+
+  // If angle is a octant (A multiple of 45 degrees)
+  if (angle_degrees == 45) {
+    return std::make_pair(width, height); // Up Right +x, +y
+  } else if (angle_degrees == 135) {
+    return std::make_pair(-width, height); // Up Left -x, +y
+  } else if (angle_degrees == 225) {
+    return std::make_pair(-width, -height); // Down Left -x, -y
+  } else if (angle_degrees == 315) {
+    return std::make_pair(width, -height); // Down Right +x, -y
+  }
+
+  // Angle is not a perfect quadrant or octant
+  if (angle_degrees >= 0 && angle_degrees < 90) {
     // top right, Only care about posX and posY
     if (IS_PARALLEL(posX) || posX.first > width || posX.second > height) {
       return posY; // because posX is out of bounds or line is parralel to X
@@ -352,7 +370,8 @@ int main(int, char **) {
       input_surface = IMG_Load(inputFileDialog.GetSelected().c_str());
       // TODO: Remove test code
       // input_surface =
-      //     SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 8, DEFAULT_PIXEL_FORMAT);
+      //     SDL_CreateRGBSurfaceWithFormat(0, 100, 100, 8,
+      //     DEFAULT_PIXEL_FORMAT);
 
       if (input_surface == NULL) {
         // TODO cancel file broser exit on error
