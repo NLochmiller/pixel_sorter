@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <math.h>
@@ -348,9 +349,14 @@ int main(int, char **) {
     if (outputFileDialog.HasSelected()) {
       output_path = outputFileDialog.GetSelected();
       printf("Selected filename %s\n", output_path.c_str());
-
-      // TODO: Save output_surface to a image
-
+      // TODO: MOVE TO A SAVE IMAGE FUNCTION
+      if (output_surface != NULL) {
+        // TODO: Allow selection between .png and .jpg formating
+        IMG_SavePNG(output_surface, output_path.c_str());
+      } else {
+        fprintf(stderr, "The output image does not exist! You must sort before "
+                        "exporting!\n");
+      }
       outputFileDialog.ClearSelected();
     }
 
