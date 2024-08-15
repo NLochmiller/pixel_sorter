@@ -50,7 +50,7 @@ void sortBand(PixelSorter_Pixel_t *&input_pixels,
 }
 
 // Private helper to sort an individual line
-void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
+bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
                   PixelSorter_Pixel_t *&output_pixels, point_ints *points,
                   int numPoints, int width, int height, int deltaX, int deltaY,
                   int offsetX, int offsetY, int valueMin, int valueMax,
@@ -81,7 +81,24 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
   // Conversion map from lineIndex to pixelIndex-
   int *pixelIndexes = (int *)calloc(numPoints, sizeof(int));
 
-  for (int lineIndex = 0; lineIndex < numPoints; lineIndex++) {
+  int lineIndex = 0;
+
+  // Advance until lineIndex is actually in the image
+  for (; lineIndex < numPoints; lineIndex++) {
+    int x = points[lineIndex].first + offsetX;
+    int y = points[lineIndex].second + offsetY;
+    if (0 <= x && x < width && 0 <= y && y < height) { // Check for inside
+      // if ()
+      // lineIndex--; // We want to process starting with current lineIndex
+      break;
+    }
+  }
+
+  if (lineIndex > numPoints) {
+    return false; // reached numPoints, thus band does not touch image, stop
+  }
+
+  for (; lineIndex < numPoints; lineIndex++) {
     int x = points[lineIndex].first + offsetX;
     int y = points[lineIndex].second + offsetY;
     int pixelIndex = TWOD_TO_1D(x, y, width);
@@ -94,7 +111,7 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
                  width, height, bandStartIndex, lineIndex);
       }
       wasLastInBand = false;
-      continue; // point is out of bounds, move on to next point
+      break; // point is out of bounds, no more points to read
     }
     /* Point must be in bounds */
 
@@ -137,6 +154,7 @@ void sortEachLine(PixelSorter_Pixel_t *&input_pixels,
              width, height, bandStartIndex, numPoints - 1);
   }
   free(pixelIndexes);
+  return true;
 }
 
 void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
@@ -187,11 +205,12 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   minL -= offset;
   maxL += offset;
 
+  bool endedInBounds = true; // Did the last band end in bounds?
   // For each line along l, increase it by 1
-  for (*l = minL; *l < maxL; (*l)++) {
-    sortEachLine(input_pixels, output_pixels, points, numPoints, width, height,
-                 deltaX, deltaY, x, y, valueMin * PRECISION,
-                 valueMax * PRECISION, input_test,
-                 255 * (maxL + minL - *l) / maxL);
+  for (*l = minL; *l < maxL && endedInBounds; (*l)++) {
+    endedInBounds = sortEachLine(input_pixels, output_pixels, points, numPoints,
+                                 width, height, deltaX, deltaY, x, y,
+                                 valueMin * PRECISION, valueMax * PRECISION,
+                                 input_test, 255 * (maxL + minL - *l) / maxL);
   }
 }
