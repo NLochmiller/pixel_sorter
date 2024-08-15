@@ -87,17 +87,16 @@ bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
   for (; lineIndex < numPoints; lineIndex++) {
     int x = points[lineIndex].first + offsetX;
     int y = points[lineIndex].second + offsetY;
-    if (0 <= x && x < width && 0 <= y && y < height) { // Check for inside
-      // if ()
-      // lineIndex--; // We want to process starting with current lineIndex
-      break;
+    if (0 <= x && x < width && 0 <= y && y < height) {
+      break; // We are inside the image, get to it
     }
   }
 
-  if (lineIndex > numPoints) {
+  if (lineIndex >= numPoints) {
     return false; // reached numPoints, thus band does not touch image, stop
   }
 
+  // Loop until we exit the image, or line goes past the image
   for (; lineIndex < numPoints; lineIndex++) {
     int x = points[lineIndex].first + offsetX;
     int y = points[lineIndex].second + offsetY;
@@ -113,8 +112,8 @@ bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
       wasLastInBand = false;
       break; // point is out of bounds, no more points to read
     }
-    /* Point must be in bounds */
 
+    /* Point must be in bounds at this point */
     PixelSorter_Pixel_t pixel = input_pixels[pixelIndex];
     SDL_GetRGB(pixel, input_test->format, &r, &g, &b);
     // Divide by 255 to fit into the 0 to 1 range expected by converters
@@ -205,9 +204,17 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   minL -= offset;
   maxL += offset;
 
-  bool endedInBounds = true; // Did the last band end in bounds?
+  bool endedInBounds = false; // Did the last band end in bounds?
+  // Go through each empty line (go until we hit the image)
+  for (*l = minL; *l < maxL && !endedInBounds; (*l)++) {
+    endedInBounds = sortEachLine(input_pixels, output_pixels, points, numPoints,
+                                 width, height, deltaX, deltaY, x, y,
+                                 valueMin * PRECISION, valueMax * PRECISION,
+                                 input_test, 255 * (maxL + minL - *l) / maxL);
+  }
+
   // For each line along l, increase it by 1
-  for (*l = minL; *l < maxL && endedInBounds; (*l)++) {
+  for (; *l < maxL && endedInBounds; (*l)++) {
     endedInBounds = sortEachLine(input_pixels, output_pixels, points, numPoints,
                                  width, height, deltaX, deltaY, x, y,
                                  valueMin * PRECISION, valueMax * PRECISION,
