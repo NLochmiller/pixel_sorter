@@ -36,36 +36,9 @@ typedef std::pair<double, double> point_doubles;
 using point_ints = std::pair<int, int>;
 using pointQueue = std::queue<point_ints>;
 
-// TODO: MOVE TO BETTER LOCATION
-// Return where two lines given points A and B intersect
-point_doubles lineLineIntersection(point_doubles A, point_doubles B,
-                                   point_doubles C, point_doubles D) {
-  // Line AB represented as a1x + b1y = c1
-  double a1 = B.second - A.second;
-  double b1 = A.first - B.first;
-  double c1 = a1 * (A.first) + b1 * (A.second);
-
-  // Line CD represented as a2x + b2y = c2
-  double a2 = D.second - C.second;
-  double b2 = C.first - D.first;
-  double c2 = a2 * (C.first) + b2 * (C.second);
-
-  double determinant = a1 * b2 - a2 * b1;
-
-  if (determinant == 0) {
-    // The lines are parallel. This is simplified
-    // by returning a pair of FLT_MAX
-    return std::make_pair(FLT_MAX, FLT_MAX);
-  } else {
-    double x = (b2 * c1 - b1 * c2) / determinant;
-    double y = (a1 * c2 - a2 * c1) / determinant;
-    return std::make_pair(x, y);
-  }
-}
-
+// Return the intersection of the line from x,y to the center of min[XY] max[XY]
 point_doubles pointOnRect(double x, double y, double minX, double maxX,
                           double minY, double maxY) {
-
   double midX = (minX + maxX) / 2;
   double midY = (minY + maxY) / 2;
   double m = (midY - y) / (midX - x);
@@ -98,7 +71,7 @@ point_doubles pointOnRect(double x, double y, double minX, double maxX,
     return std::make_pair(0.0, 0.0);
   }
 
-  fprintf(stderr, "pointOnRect: UNACCOUNTED CASE\n");
+  fprintf(stderr, "pointOnRect: UNACCOUNTED CASE\n"); // Error print.
   return std::make_pair(0.0, 0.0);
 }
 
@@ -112,130 +85,15 @@ point_doubles getEndPoint(double angle, double angle_degrees, double width,
 
   // maximum dimension
   double maxD = std::abs((std::abs(width) > std::abs(height)) ? width : height);
-  // Find the point on rect that is centered on origin, that is angle from 0
-  // degrees
+  // Find the point on rect that is centered on origin, where a line can be
+  // drawn to it from origin with given angle from 0 degrees
   return pointOnRect(smallLine.first, smallLine.second, -maxD, maxD, -maxD,
                      maxD);
-  /*
-  point_doubles topRight = std::make_pair(width, height);
-  point_doubles topLeft = std::make_pair(-width, height);
-  point_doubles botRight = std::make_pair(width, -height);
-  point_doubles botLeft = std::make_pair(-width, -height);
-
-  point_doubles origin = std::make_pair(0, 0);
-  // Since the diagonal line is length sqrt(width^2 + height^2), this is sure
-  // to be long enough, while still being fast enough
-  int length = (width * width + height * height);
-  point_doubles lineEnd =
-      std::make_pair(length * std::cos(angle), length * std::sin(angle));
-
-  // Check intersection with x's
-  point_doubles posX =
-      lineLineIntersection(origin, lineEnd, botRight, topRight);
-  point_doubles negX = lineLineIntersection(origin, lineEnd, botLeft, topLeft);
-
-  // Check intersection with y's
-  point_doubles posY = lineLineIntersection(origin, lineEnd, topLeft, topRight);
-  point_doubles negY = lineLineIntersection(origin, lineEnd, botLeft, botRight);
-#define IS_PARALLEL(_p_) (_p_.first == FLT_MAX && _p_.second == FLT_MAX)
-
-  // If angle is a perfect quadrant
-  if (angle_degrees == 0 || angle_degrees == 360) {
-    return std::make_pair(width, 0); // Right +x, 0y
-  } else if (angle_degrees == 90) {
-    return std::make_pair(0, height); // Up 0x, +y
-  } else if (angle_degrees == 180) {
-    return std::make_pair(-width, 0); // Left -x, 0y
-  } else if (angle_degrees == 270) {
-    return std::make_pair(0, -height); // Down 0x, -y
-  }
-
-  // // If angle is a octant (A multiple of 45 degrees)
-  // if (angle_degrees == 45) {
-  //   return std::make_pair(width, height); // Up Right +x, +y
-  // } else if (angle_degrees == 135) {
-  //   return std::make_pair(-width, height); // Up Left -x, +y
-  // } else if (angle_degrees == 225) {
-  //   return std::make_pair(-width, -height); // Down Left -x, -y
-  // } else if (angle_degrees == 315) {
-  //   return std::make_pair(width, -height); // Down Right +x, -y
-  // }
-
-  // Angle is not a perfect quadrant or octant
-  if (angle_degrees >= 0 && angle_degrees < 90) {
-    printf("posX = %f %f | posY = %f %f\n", posX.first, posX.second, posY.first,
-posY.second);
-    // top right, Only care about posX and posY
-    if (IS_PARALLEL(posX)) {
-      return posY; // because posX is parallel to X
-    } else if (IS_PARALLEL(posY)) {
-      return posX; // because posY is parallel to y
-    }
-    // We care more about max(|deltaX|) than anything else
-    if (std::abs(posX.first) > std::abs(posY.first)) {
-      return posX;
-    } else {
-      return posY;
-    }
-
-
-  } else if (angle_degrees >= 90 && angle_degrees < 180) {
-    // top left, Only care about negX and posY
-    if (IS_PARALLEL(negX)) {
-      return posY; // because negX is parallel to X
-    } else if (IS_PARALLEL(posY)) {
-      return negX; // because negY is parallel to Y
-    }
-
-    // We care more about max(|deltaY|) than anything else
-    if (std::abs(negX.second) > std::abs(posY.second)) {
-      return negX;
-    } else {
-      return posY;
-    }
-
-
-  } else if (angle_degrees >= 180 && angle_degrees < 270) {
-    printf("negX = %f %f | negY = %f %f\n", negX.first, negX.second, negY.first,
-           negY.second);
-    // Bottom left only care about negX and negY
-    if (IS_PARALLEL(negX)) {
-      return negY; // because negX is parallel to X
-    } else if (IS_PARALLEL(negY)) {
-      return negX; // because negY is parallel to Y
-    }
-    // We care more about max(|deltaX|) than anything else
-    if (std::abs(negX.first) > std::abs(negY.first)) {
-      return negX;
-    } else {
-      return negY;
-    }
-
-
-  } else if (angle_degrees >= 270 && angle_degrees < 360) {
-    // Bottom right only care about posX and negY
-    if (IS_PARALLEL(posX)) {
-      return negY; // because posX is parallel to X
-    } else if (IS_PARALLEL(negY)) {
-      return posX; // because negY is parallel to Y
-    }
-
-    // We care more about max(|deltaY|) than anything else
-    if (std::abs(posX.second) > std::abs(negY.second)) {
-      return posX;
-    } else {
-      return negY;
-    }
-  }
-
-  return std::make_pair(0, 0);
-  */
 }
 
 // Generate a Bresenham's line at angle that goes from origin to any edge of the
 // rectangle. With the origin being (0, 0), the line starts at the origin, and
 // the rectangle is centered on the origin
-
 pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int halfwidth,
                                                   int halfheight,
                                                   BresenhamsArguments &args) {
@@ -247,35 +105,6 @@ pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int halfwidth,
   double ang_in_rads = angle * (M_PI / 180.0f);
   point_doubles endPoint =
       getEndPoint(ang_in_rads, angle, halfwidth, halfheight);
-
-  // if (std::abs(endPoint.first) > std::abs(endPoint.second)) {
-  //   printf("dx > dy\n");
-
-  // } else if (std::abs(endPoint.first) < std::abs(endPoint.second)) {
-  //   printf("dy > dx\n");
-
-  // }
-
-  // TODO: DO THIS WHERE WE DETERMINE L, THIS WILL MAKE THINGS EASIER since we
-  // could then use the actual dx dy, and only have to scale as needed
-
-  /*
-  printf("prescale dx = %f. dy = %f. \n", endPoint.first, endPoint.second);
-  // Force the end points to be at least halfwidth, halfheight
-  if (std::abs(endPoint.first) < halfwidth) {
-    // Scale x then y, preserve sign of endPoint's x and y
-    double ratio = ((double)halfwidth) / std::abs(endPoint.first);
-    endPoint.first = (double)(endPoint.first >= 0) ? halfwidth : -halfwidth;
-    endPoint.second = ((endPoint.second >= 0) ? 1 : -1) * ratio * halfheight;
-  }
-
-  if (std::abs(endPoint.second) < halfheight) {
-    // Scale x then y, preserve sign of endPoint's x and y
-    double ratio = ((double)halfheight) / std::abs(endPoint.second);
-    endPoint.first = ((endPoint.first >= 0) ? 1 : -1) * ratio * halfwidth;
-    endPoint.second = (double)(endPoint.second >= 0) ? halfheight : -halfheight;
-  }
-  */
 
   // Initalize arguments to go from (0,0) to calculated end point
   args.init(0, 0, (int)std::round(endPoint.first),
@@ -354,11 +183,9 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&input_surface,
   endX = bresenhamsArgs.deltaX + startX;
   endY = bresenhamsArgs.deltaY + startY;
 
-  // For each n starting from startN to endN, sort along that line
   PixelSorter::sort(input_pixels, output_pixels, points, numPoints,
                     input_surface->w, input_surface->h, startX, startY, endX,
                     endY, valueMin / 100, valueMax / 100, input_surface);
-
   free(points);
   return true;
 }
@@ -611,7 +438,9 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       // Start sorting
       if (ImGui::Button("Sort")) {
-        sort_wrapper(renderer, input_surface, output_surface, angle,
+        // Angle input is human readable, account for screen 0,0 being top left
+        double flippedAngle = 360 - angle;
+        sort_wrapper(renderer, input_surface, output_surface, flippedAngle,
                      min_percent, max_percent);
         output_texture =
             updateTexture(renderer, output_surface, output_texture);
