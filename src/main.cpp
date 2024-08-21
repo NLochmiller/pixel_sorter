@@ -73,43 +73,36 @@ point_doubles pointOnRect(double x, double y, double minX, double maxX,
   return std::make_pair(0.0, 0.0);
 }
 
-// Return the end point normalized (as if we start at 0,0)
-point_doubles getEndPoint(double angle, double angle_degrees, double width,
-                          double height) {
-  // Arbitrary number, essentially controls precision of the end point
-  double length = width * width + height * height;
-  point_doubles smallLine =
-      std::make_pair(length * std::cos(angle), length * std::sin(angle));
+// Generate a Bresenham's line at angle that goes from origin to any edge of the
+// rectangle. With the origin being (0, 0), the line starts at the origin, and
+// the rectangle is centered on the origin
+pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int width,
+                                                  int height,
+                                                  BresenhamsArguments &args) {
+  if (angle == 360) {
+    angle = 0;
+  }
+  /* Calculate end point */
+  double angleInRads = angle * (M_PI / 180.0f);
+  double lineLength = width * width + height * height;
+  point_doubles smallLine = std::make_pair(lineLength * std::cos(angleInRads),
+                                           lineLength * std::sin(angleInRads));
 
   // maximum dimension
   double maxD = std::abs((std::abs(width) > std::abs(height)) ? width : height);
   // Find the point on rect that is centered on origin, where a line can be
   // drawn to it from origin with given angle from 0 degrees
-  return pointOnRect(smallLine.first, smallLine.second, -maxD, maxD, -maxD,
-                     maxD);
-}
+  point_doubles endPoint =
+      pointOnRect(smallLine.first, smallLine.second, -maxD, maxD, -maxD, maxD);
 
-// Generate a Bresenham's line at angle that goes from origin to any edge of the
-// rectangle. With the origin being (0, 0), the line starts at the origin, and
-// the rectangle is centered on the origin
-pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int halfwidth,
-                                                  int halfheight,
-                                                  BresenhamsArguments &args) {
-  // Generate the line
-  if (angle == 360) {
-    angle = 0;
-  }
-  // Calculate end point
-  double angInRads = angle * (M_PI / 180.0f);
-  point_doubles endPoint = getEndPoint(angInRads, angle, halfwidth, halfheight);
-
-  // Initalize arguments to go from (0,0) to calculated end point
+  /* Initalize and get line interpolator */
   args.init(0, 0, (int)std::round(endPoint.first),
             (int)std::round(endPoint.second));
   bresenham_interpolator *interpolator =
       LineInterpolator::get_interpolator(args.deltaX, args.deltaY);
-  // Add each point to output queue
-  std::queue<std::pair<int, int>> points;
+
+  /* Fill queue with points on line */
+  pointQueue points;
   do {
     points.push(std::make_pair(args.currentX, args.currentY));
   } while (interpolator(args));
