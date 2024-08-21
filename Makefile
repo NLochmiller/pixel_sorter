@@ -1,7 +1,7 @@
 CXX_VERSION=17
 OUTPUT = pixel_sorter
 
-SRC_DIR = .
+SRC_DIR = ./src
 LIBS_DIR = ./libs
 IMGUI_DIR = $(LIBS_DIR)/imgui
 
@@ -30,7 +30,13 @@ LIBS = -lGL -ldl -lSDL2_image `sdl2-config --libs`
 ## BUILD RULES
 ##---------------------------------------------------------------------
 
+all: $(OUTPUT)
+	@echo Build complete
+
 %.o:%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o:$(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 %.o:$(IMGUI_DIR)/%.cpp
@@ -39,9 +45,6 @@ LIBS = -lGL -ldl -lSDL2_image `sdl2-config --libs`
 %.o:$(IMGUI_DIR)/backends/%.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-all: $(OUTPUT)
-	@echo Build complete
-
 $(OUTPUT): $(OBJS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
 
@@ -49,4 +52,4 @@ run: $(OUTPUT)
 	./$(OUTPUT)
 
 clean:
-	rm -f $(OUTPUT) $(OBJS)
+	rm -f $(OUTPUT) $(OBJS) *.o

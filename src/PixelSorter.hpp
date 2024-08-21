@@ -3,7 +3,7 @@
 
 #include "SDL_surface.h"
 #include <cstdint>
-#include <string>
+
 
 typedef std::pair<int, int> point_ints;
 // By default, assumes format
