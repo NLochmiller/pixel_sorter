@@ -26,9 +26,10 @@
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
 #endif
 
-const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
-
 using LineCollision::pointQueue;
+
+// Definition of constants
+const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel
 // arrays to pass onto it, and assembles some needed information
