@@ -36,7 +36,7 @@ const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 // arrays to pass onto it, and assembles some needed information
 bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
                   SDL_Surface *&outputSurface, double angle, double valueMin,
-                  double valueMax) {
+                  double valueMax, ColorConverter *converter) {
   if (inputSurface == NULL || outputSurface == NULL) {
     return false;
   }
@@ -88,8 +88,8 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
 
   PixelSorter::sort(inputPixels, outputPixels, points, numPoints,
                     inputSurface->w, inputSurface->h, startX, startY, endX,
-                    endY, valueMin / 100, valueMax / 100,
-                    &ColorConversion::average, inputSurface->format);
+                    endY, valueMin / 100, valueMax / 100, converter,
+                    inputSurface->format);
   free(points);
   return true;
 }
@@ -98,7 +98,7 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
 int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
                SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
-               std::filesystem::path *output_path);
+               std::filesystem::path *output_path, ColorConverter **converter);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog);
@@ -185,9 +185,10 @@ int main(int, char **) {
   SDL_Texture *inputTexture = NULL;
   SDL_Texture *outputTexture = NULL;
 
+  ColorConverter *converter = &(ColorConversion::average);
+
   bool done = false;
-  /* === START OF MAIN LOOP =================================================
-   */
+  /* === START OF MAIN LOOP ================================================= */
   while (!done) {
     // Poll and handle events (inputs, window resize, etc.)
     SDL_Event event;
@@ -208,7 +209,7 @@ int main(int, char **) {
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
     mainWindow(viewport, renderer, inputSurface, inputTexture, outputSurface,
-               outputTexture, NULL);
+               outputTexture, NULL, &converter);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
@@ -295,7 +296,7 @@ void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
 int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
                SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
-               std::filesystem::path *outputPath) {
+               std::filesystem::path *outputPath, ColorConverter **converter) {
   static ImGuiWindowFlags windowFlags =
       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
@@ -341,7 +342,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         // Angle input is human readable, account for screen 0,0 being top left
         double flippedAngle = 360 - angle;
         sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
-                     percentMin, percentMax);
+                     percentMin, percentMax, *converter);
         outputTexture = updateTexture(renderer, outputSurface, outputTexture);
       }
 
