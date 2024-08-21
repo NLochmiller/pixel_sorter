@@ -14,8 +14,8 @@ typedef uint8_t PixelSorter_value_t;
 typedef long Count_t;
 
 namespace PixelSorter {
-void sort(PixelSorter_Pixel_t *&input_pixels,
-          PixelSorter_Pixel_t *&output_pixels, point_ints *points,
+void sort(PixelSorter_Pixel_t *&inputPixels,
+          PixelSorter_Pixel_t *&outputPixels, point_ints *points,
           int numPoints, int width, int height, int startX, int startY,
           int endX, int endY, double valueMin, double valueMax,
           SDL_Surface *input_test = NULL);

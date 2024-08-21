@@ -12,8 +12,8 @@
 #define COUNT_T long
 
 // Sort a band of pixels.
-void sortBand(PixelSorter_Pixel_t *&input_pixels,
-              PixelSorter_Pixel_t *&output_pixels, PixelSorter_value_t *values,
+void sortBand(PixelSorter_Pixel_t *&inputPixels,
+              PixelSorter_Pixel_t *&outputPixels, PixelSorter_value_t *values,
               int *pixelIndexes, int numPoints, int width, int height,
               int bandStartIndex, int bandEndIndex) {
   static const COUNT_T countLen = PRECISION + 1;
@@ -43,15 +43,15 @@ void sortBand(PixelSorter_Pixel_t *&input_pixels,
     int pixelIndex = pixelIndexes[lineIndex]; // Pixel index of lineIndex
     // The line index that the output pixel is at
     int outputLineIndex = bandStartIndex + (count[values[pixelIndex]] - 1);
-    output_pixels[pixelIndexes[outputLineIndex]] = input_pixels[pixelIndex];
+    outputPixels[pixelIndexes[outputLineIndex]] = inputPixels[pixelIndex];
     (count[values[pixelIndex]])--;
   }
   free(count);
 }
 
 // Private helper to sort an individual line
-bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
-                  PixelSorter_Pixel_t *&output_pixels, point_ints *points,
+bool sortEachLine(PixelSorter_Pixel_t *&inputPixels,
+                  PixelSorter_Pixel_t *&outputPixels, point_ints *points,
                   int numPoints, int width, int height, int deltaX, int deltaY,
                   int offsetX, int offsetY, int valueMin, int valueMax,
                   SDL_Surface *input_test, int goff = 0) {
@@ -106,7 +106,7 @@ bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
     if (!(0 <= x && x < width && 0 <= y && y < height)) { // Check for outside
       if (wasLastInBand) {
         // Sort from bandStartIndex to lineIndex
-        sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
+        sortBand(inputPixels, outputPixels, values, pixelIndexes, numPoints,
                  width, height, bandStartIndex, lineIndex);
       }
       wasLastInBand = false;
@@ -114,7 +114,7 @@ bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
     }
 
     /* Point must be in bounds at this point */
-    PixelSorter_Pixel_t pixel = input_pixels[pixelIndex];
+    PixelSorter_Pixel_t pixel = inputPixels[pixelIndex];
     SDL_GetRGB(pixel, input_test->format, &r, &g, &b);
     // Divide by 255 to fit into the 0 to 1 range expected by converters
     PixelSorter_value_t percent = std::round(
@@ -130,10 +130,10 @@ bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
     // State: out of band
     if (!inBand) {
       // Copy input to output
-      output_pixels[pixelIndex] = input_pixels[pixelIndex];
+      outputPixels[pixelIndex] = inputPixels[pixelIndex];
       if (wasLastInBand) { // If transitioned out of a bad, sort the band
         // Sort the band from bandStartIndex to lineIndex - 1
-        sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
+        sortBand(inputPixels, outputPixels, values, pixelIndexes, numPoints,
                  width, height, bandStartIndex, lineIndex);
       }
       wasLastInBand = false;
@@ -149,15 +149,15 @@ bool sortEachLine(PixelSorter_Pixel_t *&input_pixels,
   // If was in a band at the end of the line, we must sort
   if (wasLastInBand) {
     // Sort from bandStartIndex to numPoints - 1
-    sortBand(input_pixels, output_pixels, values, pixelIndexes, numPoints,
-             width, height, bandStartIndex, numPoints - 1);
+    sortBand(inputPixels, outputPixels, values, pixelIndexes, numPoints, width,
+             height, bandStartIndex, numPoints - 1);
   }
   free(pixelIndexes);
   return true;
 }
 
-void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
-                       PixelSorter_Pixel_t *&output_pixels, point_ints *points,
+void PixelSorter::sort(PixelSorter_Pixel_t *&inputPixels,
+                       PixelSorter_Pixel_t *&outputPixels, point_ints *points,
                        int numPoints, int width, int height, int startX,
                        int startY, int endX, int endY, double valueMin,
                        double valueMax, SDL_Surface *input_test) {
@@ -207,7 +207,7 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
   bool endedInBounds = false; // Did the last band end in bounds?
   // Go through each empty line (go until we hit the image)
   for (*l = minL; *l < maxL && !endedInBounds; (*l)++) {
-    endedInBounds = sortEachLine(input_pixels, output_pixels, points, numPoints,
+    endedInBounds = sortEachLine(inputPixels, outputPixels, points, numPoints,
                                  width, height, deltaX, deltaY, x, y,
                                  valueMin * PRECISION, valueMax * PRECISION,
                                  input_test, 255 * (maxL + minL - *l) / maxL);
@@ -215,7 +215,7 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&input_pixels,
 
   // For each line along l, increase it by 1
   for (; *l < maxL && endedInBounds; (*l)++) {
-    endedInBounds = sortEachLine(input_pixels, output_pixels, points, numPoints,
+    endedInBounds = sortEachLine(inputPixels, outputPixels, points, numPoints,
                                  width, height, deltaX, deltaY, x, y,
                                  valueMin * PRECISION, valueMax * PRECISION,
                                  input_test, 255 * (maxL + minL - *l) / maxL);
