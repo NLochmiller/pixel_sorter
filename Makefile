@@ -1,15 +1,17 @@
 CXX_VERSION=17
 OUTPUT = pixel_sorter
-# Normal sources
-SOURCES = bresenhamsLine_Interpolator.cpp main.cpp
 
+SRC_DIR = .
 LIBS_DIR = ./libs
 IMGUI_DIR = $(LIBS_DIR)/imgui
 
-# Add the imgui main files
-SOURCES += $(IMGUI_DIR)/imgui.cpp $(IMGUI_DIR)/imgui_demo.cpp \
-	$(IMGUI_DIR)/imgui_draw.cpp $(IMGUI_DIR)/imgui_tables.cpp\
-	$(IMGUI_DIR)/imgui_widgets.cpp
+
+# Normal sources
+SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
+
+# Add the imgui files
+SOURCES += $(wildcard $(IMGUI_DIR)/*.cpp)
+
 # Add the imgui backend files for SDL2
 SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp \
 	$(IMGUI_DIR)/backends/imgui_impl_sdlrenderer2.cpp
@@ -18,7 +20,7 @@ OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
 
 CXX = g++
 CXXFLAGS = -std=c++$(CXX_VERSION) -I $(IMGUI_DIR) -I $(IMGUI_DIR)/backends     \
-	-I $(LIBS_DIR)/file_browser -I ./
+	-I $(LIBS_DIR)/file_browser -I $(SRC_DIR)
 CXXFLAGS += -g -Wall -Wformat
 CXXFLAGS += `sdl2-config --cflags --libs`
 

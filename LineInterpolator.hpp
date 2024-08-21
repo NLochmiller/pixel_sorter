@@ -1,13 +1,30 @@
 #ifndef BRESENHAMSLINE_INTERPOLATOR_HPP_
 #define BRESENHAMSLINE_INTERPOLATOR_HPP_
 
-#define BRESENHAMS_INTERPOLATOR_ARGS                                           \
-  int &currentX, int &currentY, int endX, int endY, int &dx, int &dy,          \
-      double &slope_error
+// Class used to simplify passing arguments to bresenhams interpolators
+class BresenhamsArguments {
+public:
+  // Constructor
+  BresenhamsArguments(int startX = 0, int startY = 0, int endX = 0,
+                      int endY = 0);
+  // Allow for reusing the arguments, or calculating arguments after creation
+  void init(int startX, int startY, int endX, int endY);
+  // Variables
+  int currentX;
+  int currentY;
+  int startX;
+  int startY;
+  int endX;
+  int endY;
+  int deltaX;
+  int deltaY;
+  double slope_error;
+};
 
-// Internal use only
-typedef bool bresenham_interpolator(int &, int &, int, int, int &, int &,
-                                    double &);
+#define BRESENHAMS_INTERPOLATOR_ARGS BresenhamsArguments &args
+
+// Type for interpolator functions
+typedef bool bresenham_interpolator(BresenhamsArguments &);
 
 // Constants for different octants
 #define LINEINTERPOLATOR_OCTANT_0 0
@@ -24,11 +41,6 @@ public:
   // Constructor, does nothing since we only have static methods
   LineInterpolator() {}
 
-  // Initalize variables needed by bresenhams
-  // Variables user must supply: startX, startY, endX, endY
-  static void init_bresenhams(int &currentX, int &currentY, int startX,
-                              int startY, int endX, int endY, int &dx, int &dy,
-                              double &slope_error);
   // Get interpolator for use case
   static bresenham_interpolator *get_interpolator(int dx, int dy);
   static bresenham_interpolator *get_interpolator(double angle);
@@ -40,7 +52,7 @@ public:
    */
   static bresenham_interpolator invalid_bresenhams_interpolator;
 
-  // For each octant.
+  // One interpolator for each octant.
   static bresenham_interpolator interpolate_bresenhams_O0;
   static bresenham_interpolator interpolate_bresenhams_O1;
   static bresenham_interpolator interpolate_bresenhams_O2;
@@ -53,16 +65,6 @@ public:
   // Interperate along the line using bresenhams line drawing algorithm
   // returns if finished
   static bresenham_interpolator interpolate_bresenhams;
-
-private:
 };
-
-// using bresenham_interpolator = bool (LineInterpolator::*)(int &, int &, int,
-// int, int, int, int &, int &, double &);
-typedef int (LineInterpolator::*typedefName)(int);
-// typedef
-// typename bresenham_interpolator;
-// (int &, int &, int, int, int, int, int &, int &,
-//                                double &);
 
 #endif // BRESENHAMSLINE_INTERPOLATOR_HPP_

@@ -1,10 +1,12 @@
 #include <cmath>
-#include <math.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <queue>
 #include <stdio.h>
 
 #include "SDL_pixels.h"
 #include "SDL_render.h"
-#include "SDL_stdinc.h"
 #include "SDL_surface.h"
 #include "global.h"
 #include "imgui.h"
@@ -12,44 +14,177 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include <SDL.h>
 #include <SDL_image.h>
+#include <utility>
 
 #include "imfilebrowser.h"
 
 // Local includes
-#include "bresenhamsLine_Interpolator.hpp"
+#include "ImGui_SDL2_helpers.hpp"
+#include "LineInterpolator.hpp"
+#include "PixelSorter.hpp"
 #include "global.h"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
 #endif
 
-// Image types that are supported
-#ifndef SUPPORTED_IMAGE_TYPES
-#define SUPPORTED_IMAGE_TYPES                                                  \
-  { ".png", ".jpg" }
-#endif
+const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
+
+typedef std::pair<double, double> point_doubles;
+using point_ints = std::pair<int, int>;
+using pointQueue = std::queue<point_ints>;
+
+// Return the intersection of the line from x,y to the center of min[XY] max[XY]
+point_doubles pointOnRect(double x, double y, double minX, double maxX,
+                          double minY, double maxY) {
+  double midX = (minX + maxX) / 2;
+  double midY = (minY + maxY) / 2;
+  double m = (midY - y) / (midX - x);
+
+  if (x <= midX) { // check "left" side
+    double minXy = m * (minX - x) + y;
+    if (minY <= minXy && minXy <= maxY)
+      return std::make_pair(minX, minXy);
+  }
+
+  if (x >= midX) { // check "right" side
+    double maxXy = m * (maxX - x) + y;
+    if (minY <= maxXy && maxXy <= maxY)
+      return std::make_pair(maxX, maxXy);
+  }
+
+  if (y <= midY) { // check "top" side
+    double minYx = (minY - y) / m + x;
+    if (minX <= minYx && minYx <= maxX)
+      return std::make_pair(minYx, minY);
+  }
+
+  if (y >= midY) { // check "bottom" side
+    double maxYx = (maxY - y) / m + x;
+    if (minX <= maxYx && maxYx <= maxX)
+      return std::make_pair(maxYx, maxY);
+  }
+  // edge case when finding midpoint intersection: m = 0/0 = NaN
+  if (x == midX && y == midY) {
+    return std::make_pair(0.0, 0.0);
+  }
+
+  fprintf(stderr, "pointOnRect: UNACCOUNTED CASE\n"); // Error print.
+  return std::make_pair(0.0, 0.0);
+}
+
+// Return the end point normalized (as if we start at 0,0)
+point_doubles getEndPoint(double angle, double angle_degrees, double width,
+                          double height) {
+  // Arbitrary number, essentially controls precision of the end point
+  double length = width * width + height * height;
+  point_doubles smallLine =
+      std::make_pair(length * std::cos(angle), length * std::sin(angle));
+
+  // maximum dimension
+  double maxD = std::abs((std::abs(width) > std::abs(height)) ? width : height);
+  // Find the point on rect that is centered on origin, where a line can be
+  // drawn to it from origin with given angle from 0 degrees
+  return pointOnRect(smallLine.first, smallLine.second, -maxD, maxD, -maxD,
+                     maxD);
+}
+
+// Generate a Bresenham's line at angle that goes from origin to any edge of the
+// rectangle. With the origin being (0, 0), the line starts at the origin, and
+// the rectangle is centered on the origin
+pointQueue generateLinePointQueueFitIntoRectangle(double &angle, int halfwidth,
+                                                  int halfheight,
+                                                  BresenhamsArguments &args) {
+  // Generate the line
+  if (angle == 360) {
+    angle = 0;
+  }
+  // Calculate end point
+  double angInRads = angle * (M_PI / 180.0f);
+  point_doubles endPoint = getEndPoint(angInRads, angle, halfwidth, halfheight);
+
+  // Initalize arguments to go from (0,0) to calculated end point
+  args.init(0, 0, (int)std::round(endPoint.first),
+            (int)std::round(endPoint.second));
+  bresenham_interpolator *interpolator =
+      LineInterpolator::get_interpolator(args.deltaX, args.deltaY);
+  // Add each point to output queue
+  std::queue<std::pair<int, int>> points;
+  do {
+    points.push(std::make_pair(args.currentX, args.currentY));
+  } while (interpolator(args));
+  return points;
+}
+
+// Wrapper for the PixelSorter::sort function, converts surfaces to pixel
+// arrays to pass onto it, and assembles some needed information
+bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
+                  SDL_Surface *&outputSurface, double angle, double valueMin,
+                  double valueMax) {
+  if (inputSurface == NULL || outputSurface == NULL) {
+    return false;
+  }
+  // While I would rather cast and pass directly, must do this so that the
+  // compiler will stop complaining
+  PixelSorter_Pixel_t *inputPixels = (uint32_t *)inputSurface->pixels;
+  PixelSorter_Pixel_t *outputPixels = (uint32_t *)outputSurface->pixels;
+  // Generate the line
+  BresenhamsArguments bresenhamsArgs(0, 0);
+  pointQueue pointQueue = generateLinePointQueueFitIntoRectangle(
+      angle, inputSurface->w, inputSurface->h, bresenhamsArgs);
+  int numPoints = pointQueue.size();
+
+  // Convert point queue to array of points
+  point_ints *points =
+      (point_ints *)calloc(sizeof(point_ints), pointQueue.size());
+  if (points == NULL) {
+    fprintf(stderr, "Unable to convert point queue to array\n");
+    return false;
+  }
+  for (int i = 0; i < numPoints && !pointQueue.empty(); i++) {
+    points[i] = pointQueue.front();
+    pointQueue.pop();
+  }
+
+  // Start and end coordinates for making multiple lines
+  int startX = 0;
+  int startY = 0;
+  int endX = 0;
+  int endY = 0;
+
+  // Shift to specific corner for each quadrant
+  if (angle >= 0 && angle < 90) { // +x +y quadrant
+    startX = 0;
+    startY = 0;
+  } else if (angle >= 90 && angle < 180) { // -x +y quadrant
+    startX = inputSurface->w - 1;
+    startY = 0;
+  } else if (angle >= 180 && angle < 270) { // -x -y quadrant
+    startX = inputSurface->w - 1;
+    startY = inputSurface->h - 1;
+  } else { // +x -y quadrant
+    startX = 0;
+    startY = inputSurface->h - 1;
+  }
+  // Properly set endX and endY
+  endX = bresenhamsArgs.deltaX + startX;
+  endY = bresenhamsArgs.deltaY + startY;
+
+  PixelSorter::sort(inputPixels, outputPixels, points, numPoints,
+                    inputSurface->w, inputSurface->h, startX, startY, endX,
+                    endY, valueMin / 100, valueMax / 100, inputSurface);
+  free(points);
+  return true;
+}
 
 // Forward declerations
-void render(SDL_Renderer *renderer);
-int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer);
+int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
+               SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
+               SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
+               std::filesystem::path *output_path);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
-                       ImGui::FileBrowser &outputFileDialog) {
-  if (ImGui::BeginMainMenuBar()) {
-    if (ImGui::BeginMenu("File")) {
-      ImGui::SeparatorText("Image files");
-      // File dialogs to select files
-      if (ImGui::MenuItem("Open", "", false)) {
-        inputFileDialog.Open();
-      }
-      if (ImGui::MenuItem("Export as", "", false)) {
-        outputFileDialog.Open();
-      }
-      ImGui::EndMenu();
-    }
-  }
-  ImGui::EndMainMenuBar();
-}
+                       ImGui::FileBrowser &outputFileDialog);
 
 int main(int, char **) {
   // Setup SDL
@@ -124,8 +259,18 @@ int main(int, char **) {
   outputFileDialog.SetTitle("Select output image");
   outputFileDialog.SetTypeFilters(SUPPORTED_IMAGE_TYPES);
 
+  /* Surfaces for images */
+  SDL_Surface *inputSurface = NULL;
+  SDL_Surface *outputSurface = NULL;
+
+  /* Textures for images, used so we don't create one each frame */
+  std::filesystem::path outputPath;
+  SDL_Texture *inputTexture = NULL;
+  SDL_Texture *outputTexture = NULL;
+
   bool done = false;
-  /* === START OF MAIN LOOP ================================================= */
+  /* === START OF MAIN LOOP =================================================
+   */
   while (!done) {
     // Poll and handle events (inputs, window resize, etc.)
     SDL_Event event;
@@ -145,28 +290,57 @@ int main(int, char **) {
     ImGui::NewFrame();
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
-    main_window(viewport, renderer);
+    mainWindow(viewport, renderer, inputSurface, inputTexture, outputSurface,
+               outputTexture, NULL);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
-      printf("Selected filename %s\n",
-             inputFileDialog.GetSelected().string().c_str());
-      inputFileDialog.ClearSelected();
+      inputSurface = IMG_Load(inputFileDialog.GetSelected().c_str());
+      if (inputSurface == NULL) {
+        // TODO cancel file broser exit on error
+        fprintf(stderr, "File %s does not exist\n",
+                inputFileDialog.GetSelected().c_str());
+      } else {
+        // Immediately convert to the basic format
+        inputSurface = SDL_ConvertSurfaceFormat_MemSafe(inputSurface,
+                                                        DEFAULT_PIXEL_FORMAT);
+        // Convert to texture
+        inputTexture = updateTexture(renderer, inputSurface, inputTexture);
+        // Create the output surface to use with this
+        outputSurface =
+            SDL_CreateRGBSurfaceWithFormat(0, inputSurface->w, inputSurface->h,
+                                           DEFAULT_DEPTH, DEFAULT_PIXEL_FORMAT);
+        if (outputSurface == NULL) {
+          fprintf(stderr, "Failed to create output surface");
+        } else {
+          outputTexture = updateTexture(renderer, outputSurface, outputTexture);
+        }
+        inputFileDialog.ClearSelected();
+      }
     }
 
     // Process output file dialog
     outputFileDialog.Display();
     if (outputFileDialog.HasSelected()) {
-      printf("Selected filename %s\n",
-             outputFileDialog.GetSelected().string().c_str());
+      outputPath = outputFileDialog.GetSelected();
+      printf("Selected filename %s\n", outputPath.c_str());
+      // TODO: MOVE TO A SAVE IMAGE FUNCTION
+      if (outputSurface != NULL) {
+        // TODO: Allow selection between .png and .jpg formating
+        IMG_SavePNG(outputSurface, outputPath.c_str());
+      } else {
+        fprintf(stderr, "The output image does not exist! You must sort before "
+                        "exporting!\n");
+      }
       outputFileDialog.ClearSelected();
     }
 
     render(renderer);
   }
-  /* === END OF MAIN LOOP =================================================== */
+  /* === END OF MAIN LOOP ===================================================
+   */
 
   // Cleanup
   ImGui_ImplSDLRenderer2_Shutdown();
@@ -180,122 +354,32 @@ int main(int, char **) {
   return 0;
 }
 
-// Render the entire window
-void render(SDL_Renderer *renderer) {
-  ImGuiIO &io = ImGui::GetIO();
-  ImGui::Render();
-  SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x,
-                     io.DisplayFramebufferScale.y);
-  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-  SDL_RenderClear(renderer);
-  ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
-  SDL_RenderPresent(renderer);
-}
-
-// For width and height, 0 indicates to use the respective dimension of the
-// surface
-bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface,
-                    uint width = 0, uint height = 0) {
-  if (surface == NULL) {
-    return false;
-  }
-
-  SDL_Texture *texture_ptr = SDL_CreateTextureFromSurface(renderer, surface);
-  if (texture_ptr == NULL) {
-    printf("Bad texture pointer");
-    exit(-2);
-  }
-
-  // Adjust width and height to the images if desired (width or height = 0)
-  if (width == 0) {
-    width = surface->w;
-  }
-  if (height == 0) {
-    height = surface->h;
-  }
-
-  ImGui::Image((void *)texture_ptr, ImVec2(width, height));
-  return true;
-}
-
-bool test_for_mac(int &a) {
-  a = 30;
-  return a < 45;
-}
-
-void test_octant(int &currentX, int &currentY, int sx, int sy, int ex, int ey,
-                 int &dx, int &dy, double &slope_error,
-                 SDL_Surface *img_surface, double percent,
-                 bresenham_interpolator *func) {
-  // For each octant
-  LineInterpolator::init_bresenhams(currentX, currentY, sx, sy, ex, ey, dx, dy,
-                                    slope_error);
-
-  func = LineInterpolator::get_interpolator(dx, dy);
-  Uint32 black = SDL_MapRGBA(img_surface->format, (Uint8)255 * percent,
-                             255 - 255 * percent, 0, 255);
-  Uint32 *pixels = (Uint32 *)img_surface->pixels;
-  do {
-    // n*WIDTH+m
-    pixels[TWOD_TO_1D(currentX, currentY, img_surface->w)] = black;
-  } while (func(currentX, currentY, ex, ey, dx, dy, slope_error));
-}
-
-void test(SDL_Renderer *renderer) {
-  static bool init = false;
-  int w = 101;
-  int h = 101;
-  static SDL_Surface *img_surface =
-      SDL_CreateRGBSurfaceWithFormat(0, w, h, 8, DEFAULT_PIXEL_FORMAT);
-  // IMG_Load("/home/nloch/Pictures/backgrounds/wallhaven-q6ro3l.jpg");
-
-  if (!init) {
-    if (img_surface == NULL) {
-      fprintf(stderr, "BAD SURFACE\n");
-      exit(-1);
+// Handle the main menu bar
+void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
+                       ImGui::FileBrowser &outputFileDialog) {
+  if (ImGui::BeginMainMenuBar()) {
+    if (ImGui::BeginMenu("File")) {
+      ImGui::SeparatorText("Image files");
+      // File dialogs to select files
+      if (ImGui::MenuItem("Open", "", false)) {
+        inputFileDialog.Open();
+      }
+      if (ImGui::MenuItem("Export as", "", false)) {
+        outputFileDialog.Open();
+      }
+      ImGui::EndMenu();
     }
-
-    // Fill with white
-    const SDL_Rect whole_surf_rect = {.x = 0, .y = 0, .w = w, .h = h};
-    Uint32 background_color =
-        SDL_MapRGBA(img_surface->format, 255, 255, 255, 255);
-
-    SDL_FillRect(img_surface, &whole_surf_rect, (Uint32)background_color);
-
-    // Number of segments to test with
-    double segments = 3 * 8.0f;
-    double dang = 360.0f / segments;
-    int hyp_len = w / 2;
-
-    for (double a = 0; a < 360.0f; a += dang) {
-      double ang = a;
-      double ang_in_rads = ang * (M_PI / 180.0f);
-      int curX, curY;
-      int sx = w / 2;
-      int sy = h / 2;
-
-      int ex = sx + std::round(cos(-ang_in_rads) * hyp_len);
-      int ey = sy + std::round(sin(-ang_in_rads) * hyp_len);
-      int dx = 0;
-      int dy = 0;
-      double slope_error = 0;
-
-      test_octant(curX, curY, sx, sy, ex, ey, dx, dy, slope_error, img_surface,
-                  ang / 360.0f, NULL);
-    }
-
-    init = true;
   }
-
-  h *= 3;
-  w *= 3;
-  displaySurface(renderer, img_surface, w, h);
+  ImGui::EndMainMenuBar();
 }
 
 // The main window, aka the background window
 // Returns non zero on error
-int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer) {
-  static ImGuiWindowFlags window_flags =
+int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
+               SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
+               SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
+               std::filesystem::path *outputPath) {
+  static ImGuiWindowFlags windowFlags =
       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
 
@@ -303,7 +387,7 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer) {
   ImGui::SetNextWindowPos(viewport->WorkPos);
   ImGui::SetNextWindowSize(viewport->WorkSize);
 
-  if (ImGui::Begin("Main window", NULL, window_flags)) {
+  if (ImGui::Begin("Main window", NULL, windowFlags)) {
     // Main group
     ImGui::BeginGroup();
     static bool check = false;
@@ -311,13 +395,57 @@ int main_window(const ImGuiViewport *viewport, SDL_Renderer *renderer) {
       ImGui::Checkbox("Test checkbox", &check);
 
       // Set the minimum and maximum percentages of values will be sorted
-      static float min_percent = 25.0;
-      static float max_percent = 75.0;
-      ImGui::DragFloatRange2("Percentage range", &min_percent, &max_percent,
-                             1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
-                             "Maximum: %.2f%%", ImGuiSliderFlags_AlwaysClamp);
-      ImGui::Text("min = %.3f max = %.3f", min_percent, max_percent);
-      test(renderer);
+      static float percentMin = 25.0;
+      static float percentMax = 75.0;
+      ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
+                             0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
+                             ImGuiSliderFlags_AlwaysClamp);
+      ImGui::Text("min = %.3f max = %.3f", percentMin, percentMax);
+
+      static float angle = 90.0;
+      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f");
+
+      // Export button
+      {
+        // TODO: Find if path is empty
+        bool isExportButtonDisabled =
+            (outputSurface == NULL) /* TODO: || PATH BAD */;
+        ImGui::BeginDisabled(isExportButtonDisabled);
+        if (ImGui::Button("Export")) {
+          fprintf(stderr, "export!\n");
+          // TODO: Save to export path.
+        }
+
+        ImGui::EndDisabled();
+      }
+
+      // Start sorting
+      if (ImGui::Button("Sort")) {
+        // Angle input is human readable, account for screen 0,0 being top left
+        double flippedAngle = 360 - angle;
+        sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
+                     percentMin, percentMax);
+        outputTexture = updateTexture(renderer, outputSurface, outputTexture);
+      }
+
+      // Zoom slider
+      static float imageZoom = 100.0;
+      ImGui::DragFloat("Image zoom", &imageZoom, 1.0f, 0.0f, 500.0f,
+                       "Zoom: %.2f%%", 0);
+
+      // Display images
+      double zoomPercent = imageZoom / 100.0f;
+      // Display input image zoomed in to percent
+      if (inputTexture != NULL) {
+        displayTexture(renderer, inputTexture, inputSurface->w * zoomPercent,
+                       inputSurface->h * zoomPercent);
+      }
+
+      // Display output image zoomed in to percent
+      if (outputTexture != NULL) {
+        displayTexture(renderer, outputTexture, outputSurface->w * zoomPercent,
+                       outputSurface->h * zoomPercent);
+      }
     }
     ImGui::EndGroup();
 
