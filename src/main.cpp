@@ -1,8 +1,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <optional>
 #include <stdio.h>
 
+#include "ColorConversion.hpp"
 #include "LineCollision.hpp"
 #include "SDL_pixels.h"
 #include "SDL_render.h"
@@ -13,6 +15,7 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include <SDL.h>
 #include <SDL_image.h>
+#include <utility>
 
 #include "imfilebrowser.h"
 
@@ -35,7 +38,7 @@ const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 // arrays to pass onto it, and assembles some needed information
 bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
                   SDL_Surface *&outputSurface, double angle, double valueMin,
-                  double valueMax) {
+                  double valueMax, ColorConverter *converter) {
   if (inputSurface == NULL || outputSurface == NULL) {
     return false;
   }
@@ -87,7 +90,8 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
 
   PixelSorter::sort(inputPixels, outputPixels, points, numPoints,
                     inputSurface->w, inputSurface->h, startX, startY, endX,
-                    endY, valueMin / 100, valueMax / 100, inputSurface);
+                    endY, valueMin / 100, valueMax / 100, converter,
+                    inputSurface->format);
   free(points);
   return true;
 }
@@ -96,7 +100,7 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
 int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
                SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
-               std::filesystem::path *output_path);
+               std::filesystem::path *output_path, ColorConverter **converter);
 
 void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
                        ImGui::FileBrowser &outputFileDialog);
@@ -183,9 +187,10 @@ int main(int, char **) {
   SDL_Texture *inputTexture = NULL;
   SDL_Texture *outputTexture = NULL;
 
+  ColorConverter *converter = &(ColorConversion::average);
+
   bool done = false;
-  /* === START OF MAIN LOOP =================================================
-   */
+  /* === START OF MAIN LOOP ================================================= */
   while (!done) {
     // Poll and handle events (inputs, window resize, etc.)
     SDL_Event event;
@@ -206,7 +211,7 @@ int main(int, char **) {
 
     const ImGuiViewport *viewport = ImGui::GetMainViewport();
     mainWindow(viewport, renderer, inputSurface, inputTexture, outputSurface,
-               outputTexture, NULL);
+               outputTexture, NULL, &converter);
     handleMainMenuBar(inputFileDialog, outputFileDialog);
 
     // Process input file dialog
@@ -293,7 +298,7 @@ void handleMainMenuBar(ImGui::FileBrowser &inputFileDialog,
 int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
                SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
-               std::filesystem::path *outputPath) {
+               std::filesystem::path *outputPath, ColorConverter **converter) {
   static ImGuiWindowFlags windowFlags =
       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar;
@@ -305,20 +310,77 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
   if (ImGui::Begin("Main window", NULL, windowFlags)) {
     // Main group
     ImGui::BeginGroup();
-    static bool check = false;
     {
-      ImGui::Checkbox("Test checkbox", &check);
+      // Color Conversion selection
+      {
+        // The pairs that make up the things
+        const int convertersCount = 12; // TODO: make calculate this, manual bad
+        static std::pair<ColorConverter *, char *> converterOptions[] = {
+            std::make_pair(&(ColorConversion::red), (char *)"Red"),
+            std::make_pair(&ColorConversion::green, (char *)"Green"),
+            std::make_pair(&ColorConversion::blue, (char *)"Blue"),
+            std::make_pair(&ColorConversion::average, (char *)"Average"),
+            std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
+            std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
+            std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
+            std::make_pair(&ColorConversion::hue, (char *)"Hue"),
+            std::make_pair(&ColorConversion::saturation,
+                           (char *)"Saturation (HSV)"),
+            std::make_pair(&ColorConversion::value, (char *)"Value"),
+            std::make_pair(&ColorConversion::saturation_HSL,
+                           (char *)"Saturation (HSL)"),
+            std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
+        // Here we store our selection data as an index.
+        static int item_selected_idx = 11; // Use lightness as default
+        // Pass in the preview value visible before opening the combo (it could
+        // technically be different contents or not pulled from items[])
+        const char *combo_preview_value =
+            converterOptions[item_selected_idx].second;
+        static ImGuiComboFlags flags = 0;
+        // Display each item in combo
+        if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
+          for (int n = 0; n < convertersCount; n++) {
+            const bool is_selected = (item_selected_idx == n);
+            if (ImGui::Selectable(converterOptions[n].second, is_selected))
+              item_selected_idx = n;
+
+            // Set the initial focus when opening the combo (scrolling +
+            // keyboard navigation focus)
+            if (is_selected)
+              ImGui::SetItemDefaultFocus();
+          }
+          ImGui::EndCombo();
+        }
+        *converter = converterOptions[item_selected_idx].first; // update
+      }
+
+      const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
 
       // Set the minimum and maximum percentages of values will be sorted
       static float percentMin = 25.0;
       static float percentMax = 75.0;
       ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
                              0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
-                             ImGuiSliderFlags_AlwaysClamp);
-      ImGui::Text("min = %.3f max = %.3f", percentMin, percentMax);
+                             sliderFlags);
 
       static float angle = 90.0;
-      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f");
+      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f",
+                       sliderFlags);
+
+      { // Sorting button. Enabled only when there is an input surface
+        ImGui::BeginDisabled(inputSurface == NULL);
+        if (ImGui::Button("Sort")) {
+          // Angle input is human readable, account for screen 0,0 being top
+          // left
+          double flippedAngle = 360 - angle;
+          sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
+                       percentMin, percentMax, *converter);
+          outputTexture = updateTexture(renderer, outputSurface, outputTexture);
+        }
+        ImGui::EndDisabled();
+      }
+
+      ImGui::SameLine();
 
       // Export button
       {
@@ -332,15 +394,6 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         }
 
         ImGui::EndDisabled();
-      }
-
-      // Start sorting
-      if (ImGui::Button("Sort")) {
-        // Angle input is human readable, account for screen 0,0 being top left
-        double flippedAngle = 360 - angle;
-        sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
-                     percentMin, percentMax);
-        outputTexture = updateTexture(renderer, outputSurface, outputTexture);
       }
 
       // Zoom slider
