@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <stdio.h>
 
+#include "ColorConversion.hpp"
 #include "LineCollision.hpp"
 #include "SDL_pixels.h"
 #include "SDL_render.h"
@@ -87,7 +88,8 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
 
   PixelSorter::sort(inputPixels, outputPixels, points, numPoints,
                     inputSurface->w, inputSurface->h, startX, startY, endX,
-                    endY, valueMin / 100, valueMax / 100, inputSurface);
+                    endY, valueMin / 100, valueMax / 100,
+                    &ColorConversion::average, inputSurface->format);
   free(points);
   return true;
 }

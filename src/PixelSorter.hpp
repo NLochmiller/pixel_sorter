@@ -1,7 +1,8 @@
 #ifndef PIXELSORTER_HPP_
 #define PIXELSORTER_HPP_
 
-#include "SDL_surface.h"
+#include "ColorConversion.hpp"
+#include "SDL_pixels.h"
 #include <cstdint>
 
 
@@ -18,7 +19,7 @@ void sort(PixelSorter_Pixel_t *&inputPixels,
           PixelSorter_Pixel_t *&outputPixels, point_ints *points,
           int numPoints, int width, int height, int startX, int startY,
           int endX, int endY, double valueMin, double valueMax,
-          SDL_Surface *input_test = NULL);
+          ColorConverter *converter, SDL_PixelFormat *format);
 }
 
 #endif // PIXELSORTER_HPP_

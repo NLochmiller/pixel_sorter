@@ -1,7 +1,6 @@
 #include "PixelSorter.hpp"
 #include "ColorConversion.hpp"
 #include "SDL_pixels.h"
-#include "SDL_surface.h"
 #include "global.h"
 #include <cstdint>
 #include <cstdio>
@@ -54,7 +53,7 @@ bool sortEachLine(PixelSorter_Pixel_t *&inputPixels,
                   PixelSorter_Pixel_t *&outputPixels, point_ints *points,
                   int numPoints, int width, int height, int deltaX, int deltaY,
                   int offsetX, int offsetY, int valueMin, int valueMax,
-                  SDL_Surface *input_test, int goff = 0) {
+                  ColorConverter *converter, SDL_PixelFormat *format) {
   /*
    * For each line:
    *  while out of bounds: move along line
@@ -75,7 +74,7 @@ bool sortEachLine(PixelSorter_Pixel_t *&inputPixels,
   int bandStartIndex = 0;
   uint8_t r, g, b; // Individual color values, that will be used later
   // TODO: make a variable
-  ColorConverter *converter = &(ColorConversion::maximum);
+
   PixelSorter_value_t values[width * height]; // pixelIndex to value
   bool wasLastInBand = false;                 // if the last pixel was in a band
   // Conversion map from lineIndex to pixelIndex-
@@ -115,7 +114,7 @@ bool sortEachLine(PixelSorter_Pixel_t *&inputPixels,
 
     /* Point must be in bounds at this point */
     PixelSorter_Pixel_t pixel = inputPixels[pixelIndex];
-    SDL_GetRGB(pixel, input_test->format, &r, &g, &b);
+    SDL_GetRGB(pixel, format, &r, &g, &b);
     // Divide by 255 to fit into the 0 to 1 range expected by converters
     PixelSorter_value_t percent = std::round(
         PRECISION * converter(((double)r) / 255.0, ((double)g) / 255.0,
@@ -160,7 +159,8 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&inputPixels,
                        PixelSorter_Pixel_t *&outputPixels, point_ints *points,
                        int numPoints, int width, int height, int startX,
                        int startY, int endX, int endY, double valueMin,
-                       double valueMax, SDL_Surface *input_test) {
+                       double valueMax, ColorConverter *converter,
+                       SDL_PixelFormat *format) {
   int deltaX = endX - startX;
   int deltaY = endY - startY;
 
@@ -207,17 +207,17 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&inputPixels,
   bool endedInBounds = false; // Did the last band end in bounds?
   // Go through each empty line (go until we hit the image)
   for (*l = minL; *l < maxL && !endedInBounds; (*l)++) {
-    endedInBounds = sortEachLine(inputPixels, outputPixels, points, numPoints,
-                                 width, height, deltaX, deltaY, x, y,
-                                 valueMin * PRECISION, valueMax * PRECISION,
-                                 input_test, 255 * (maxL + minL - *l) / maxL);
+    endedInBounds =
+        sortEachLine(inputPixels, outputPixels, points, numPoints, width,
+                     height, deltaX, deltaY, x, y, valueMin * PRECISION,
+                     valueMax * PRECISION, converter, format);
   }
 
   // For each line along l, increase it by 1
   for (; *l < maxL && endedInBounds; (*l)++) {
-    endedInBounds = sortEachLine(inputPixels, outputPixels, points, numPoints,
-                                 width, height, deltaX, deltaY, x, y,
-                                 valueMin * PRECISION, valueMax * PRECISION,
-                                 input_test, 255 * (maxL + minL - *l) / maxL);
+    endedInBounds =
+        sortEachLine(inputPixels, outputPixels, points, numPoints, width,
+                     height, deltaX, deltaY, x, y, valueMin * PRECISION,
+                     valueMax * PRECISION, converter, format);
   }
 }
