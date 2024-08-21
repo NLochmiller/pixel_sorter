@@ -331,7 +331,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                            (char *)"Saturation (HSL)"),
             std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
         // Here we store our selection data as an index.
-        static int item_selected_idx = 0;
+        static int item_selected_idx = 11; // Use lightness as default
         // Pass in the preview value visible before opening the combo (it could
         // technically be different contents or not pulled from items[])
         const char *combo_preview_value =
@@ -354,27 +354,31 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         *converter = converterOptions[item_selected_idx].first; // update
       }
 
+      const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
+
       // Set the minimum and maximum percentages of values will be sorted
       static float percentMin = 25.0;
       static float percentMax = 75.0;
       ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
                              0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
-                             ImGuiSliderFlags_AlwaysClamp);
-      
+                             sliderFlags);
+
       static float angle = 90.0;
-      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f");
+      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f",
+                       sliderFlags);
 
-      // Sorting button. Enabled only when there is an input surface
-      ImGui::BeginDisabled(inputSurface == NULL);
-      if (ImGui::Button("Sort")) {
-        // Angle input is human readable, account for screen 0,0 being top left
-        double flippedAngle = 360 - angle;
-        sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
-                     percentMin, percentMax, *converter);
-        outputTexture = updateTexture(renderer, outputSurface, outputTexture);
-
+      { // Sorting button. Enabled only when there is an input surface
+        ImGui::BeginDisabled(inputSurface == NULL);
+        if (ImGui::Button("Sort")) {
+          // Angle input is human readable, account for screen 0,0 being top
+          // left
+          double flippedAngle = 360 - angle;
+          sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
+                       percentMin, percentMax, *converter);
+          outputTexture = updateTexture(renderer, outputSurface, outputTexture);
+        }
+        ImGui::EndDisabled();
       }
-      ImGui::EndDisabled();
 
       ImGui::SameLine();
 
