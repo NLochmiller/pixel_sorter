@@ -4,12 +4,10 @@
 #include <optional>
 #include <stdio.h>
 
-#include "ColorConversion.hpp"
-#include "LineCollision.hpp"
 #include "SDL_pixels.h"
 #include "SDL_render.h"
 #include "SDL_surface.h"
-#include "global.h"
+
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -20,10 +18,12 @@
 #include "imfilebrowser.h"
 
 // Local includes
+#include "ColorConversion.hpp"
 #include "ImGui_SDL2_helpers.hpp"
+#include "LineCollision.hpp"
 #include "LineInterpolator.hpp"
 #include "PixelSorter.hpp"
-#include "global.h"
+#include "global.hpp"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
@@ -313,8 +313,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
     {
       // Color Conversion selection
       {
-        // The pairs that make up the things
-        const int convertersCount = 12; // TODO: make calculate this, manual bad
+        // The pairs that make up the selection options
         static std::pair<ColorConverter *, char *> converterOptions[] = {
             std::make_pair(&(ColorConversion::red), (char *)"Red"),
             std::make_pair(&ColorConversion::green, (char *)"Green"),
@@ -327,22 +326,22 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
             std::make_pair(&ColorConversion::saturation,
                            (char *)"Saturation (HSV)"),
             std::make_pair(&ColorConversion::value, (char *)"Value"),
-            std::make_pair(&ColorConversion::saturation_HSL,
+            std::make_pair(&ColorConversion::saturation_HSL, 
                            (char *)"Saturation (HSL)"),
             std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
-        // Here we store our selection data as an index.
-        static int item_selected_idx = 11; // Use lightness as default
+        static const int convertersCount = arrayLen(converterOptions);
+        static int selected_converter_index = 11; // Use lightness as default
         // Pass in the preview value visible before opening the combo (it could
         // technically be different contents or not pulled from items[])
         const char *combo_preview_value =
-            converterOptions[item_selected_idx].second;
+            converterOptions[selected_converter_index].second;
         static ImGuiComboFlags flags = 0;
         // Display each item in combo
         if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
           for (int n = 0; n < convertersCount; n++) {
-            const bool is_selected = (item_selected_idx == n);
+            const bool is_selected = (selected_converter_index == n);
             if (ImGui::Selectable(converterOptions[n].second, is_selected))
-              item_selected_idx = n;
+              selected_converter_index = n;
 
             // Set the initial focus when opening the combo (scrolling +
             // keyboard navigation focus)
@@ -351,7 +350,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
           }
           ImGui::EndCombo();
         }
-        *converter = converterOptions[item_selected_idx].first; // update
+        *converter = converterOptions[selected_converter_index].first; // update
       }
 
       const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
