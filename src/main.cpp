@@ -326,7 +326,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
             std::make_pair(&ColorConversion::saturation,
                            (char *)"Saturation (HSV)"),
             std::make_pair(&ColorConversion::value, (char *)"Value"),
-            std::make_pair(&ColorConversion::saturation_HSL, 
+            std::make_pair(&ColorConversion::saturation_HSL,
                            (char *)"Saturation (HSL)"),
             std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
         static const int convertersCount = arrayLen(converterOptions);
