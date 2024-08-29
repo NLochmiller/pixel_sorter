@@ -92,6 +92,7 @@ double ColorConversion::hue(double r, double g, double b) {
 }
 
 // Saturation (HSV)
+// TODO: BUGGGY FIX
 double ColorConversion::saturation(double r, double g, double b) {
   // Calculate value (called max) and chroma
   double max = maxRGB(r, g, b);
@@ -111,6 +112,7 @@ double ColorConversion::saturation(double r, double g, double b) {
 }
 
 // HSL saturation
+// TODO: BUGGY FIX SEE 20x20 gradient on 90d all values, bad in bottom right
 double ColorConversion::saturation_HSL(double r, double g, double b) {
   // Calculate Lightness
   double max = maxRGB(r, g, b);
