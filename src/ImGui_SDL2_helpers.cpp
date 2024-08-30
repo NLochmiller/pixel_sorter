@@ -39,8 +39,8 @@ bool displayTexture(SDL_Renderer *renderer, SDL_Texture *texture, uint width,
 }
 
 bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
-                            uint width, uint height, float previewSize,
-                            float zoom) {
+                            uint width, uint height, float previewNum,
+                            float previewSize) {
   // Get dimensions of the texture only if either width or height is zero
   if (width == 0 || height == 0) {
     int texture_width = 0;
@@ -55,14 +55,14 @@ bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
     }
   }
 
-  ImGui::ImageZoomable((void *)texture, ImVec2(width, height), previewSize,
-                       zoom);
+  ImGui::ImageZoomable((void *)texture, ImVec2(width, height), previewNum,
+                       previewSize);
   return true;
 }
 
 bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
                             uint width, uint height, uint dwidth, uint dheight,
-                            float previewSize, float zoom) {
+                            float previewNum, float previewSize) {
   // Get dimensions of the texture only if either width or height is zero
   if (width == 0 || height == 0) {
     int texture_width = 0;
@@ -78,7 +78,7 @@ bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
   }
 
   ImGui::ImageZoomable((void *)texture, ImVec2(width, height),
-                       ImVec2(dwidth, dheight), previewSize, zoom);
+                       ImVec2(dwidth, dheight), previewNum, previewSize);
   return true;
 }
 
