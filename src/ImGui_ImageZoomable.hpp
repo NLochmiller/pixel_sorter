@@ -1,5 +1,5 @@
-#ifndef IMGUI_ZOOMABLE_IMAGE_HPP_
-#define IMGUI_ZOOMABLE_IMAGE_HPP_
+#ifndef IMGUI_IMAGEZOOMABLE_HPP_
+#define IMGUI_IMAGEZOOMABLE_HPP_
 
 #include "imgui.h"
 namespace ImGui {
@@ -18,10 +18,6 @@ bool ImageZoomable(
     float previewSize = 32.0f, float zoomFactor = 4.0f,
     ImVec4 tintColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
     ImVec4 borderColor = ImGui::GetStyleColorVec4(ImGuiCol_Border));
-
-// Add a variation of ImageZoomable where we provide a scaled size for the image
-// to be displayed as. Allows us to provide actual image size, and the size we
-// want it displayed at when the mouse is not hovering
 
 }; // namespace ImGui
 
