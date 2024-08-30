@@ -401,13 +401,13 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       // Display input image zoomed in to percent
       if (inputTexture != NULL) {
         displayTextureZoomable(renderer, inputTexture, inputSurface->w,
-                               inputSurface->h);
+                               inputSurface->h, (uint)200, (uint)200);
       }
 
       // Display output image zoomed in to percent
       if (outputTexture != NULL) {
         displayTextureZoomable(renderer, outputTexture, outputSurface->w,
-                               outputSurface->h);
+                               outputSurface->h, (uint) 200, 200);
       }
     }
   }

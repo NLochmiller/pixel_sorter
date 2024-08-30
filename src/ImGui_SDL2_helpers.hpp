@@ -20,6 +20,11 @@ bool displayTexture(SDL_Renderer *renderer, SDL_Texture *texture,
 bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
                             uint width = 0, uint height = 0,
                             float previewSize = 32, float zoom = 4);
+// Display the zoomable texture
+bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
+                            uint width = 0, uint height = 0,
+                            uint dwidth = 0, uint dheight = 0,
+                            float previewSize = 32, float zoom = 4);
 
 // For width and height, 0 indicates to use the respective dimension of the
 // surface
