@@ -393,21 +393,30 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
     { // Images
       // Zoom slider
-      static float imageZoom = 100.0;
-      ImGui::DragFloat("Image zoom", &imageZoom, 1.0f, 0.0f, 500.0f,
+      static float minDimension = 100;
+      static float previewNum = std::min(8.0f, minDimension);
+      // Range from [1, min(width, height)] allowing full image previews
+      ImGui::DragFloat("Pixels in section", &previewNum, 1.0f, 1.0f,
+                       minDimension, "Pixels: %.2f%%", 0);
+      ImVec2 viewSize = viewport->WorkSize; 
+      // Set the standard preview window size to 1/5 the min dimension of window
+      static float previewSize = std::min(viewSize.x, viewSize.y) * 0.2;
+      ImGui::DragFloat("Size of preview", &previewSize, 1.0f, 0.0f, 500.0f,
                        "Zoom: %.2f%%", 0);
-      // Display images
-      double zoomPercent = imageZoom / 100.0f;
+
       // Display input image zoomed in to percent
       if (inputTexture != NULL) {
+        // Update the values that the sliders can have
+        minDimension = std::min(inputSurface->w, inputSurface->h);
+        
         displayTextureZoomable(renderer, inputTexture, inputSurface->w,
-                               inputSurface->h, (uint)200, (uint)200);
+                               inputSurface->h, previewNum, previewSize);
       }
 
       // Display output image zoomed in to percent
       if (outputTexture != NULL) {
         displayTextureZoomable(renderer, outputTexture, outputSurface->w,
-                               outputSurface->h, (uint) 200, 200);
+                               outputSurface->h, previewNum, previewSize);
       }
     }
   }
