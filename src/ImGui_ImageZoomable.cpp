@@ -5,20 +5,11 @@
 // Can optionally provide the tint color (default none), and the border color
 // (default: ImGuiCol_Border)
 // Returns success
-bool ImGui::ImageZoomable(ImTextureID textureId, float textureWidth,
-                          float textureHeight, float previewSize, float zoom,
-                          ImVec4 tintColor, ImVec4 borderColor) {
+bool ImGui::ImageZoomable(ImTextureID textureId, ImVec2 textureSize,
+                          float previewSize, float zoom, ImVec4 tintColor,
+                          ImVec4 borderColor) {
   if (textureId == NULL) {
     fprintf(stderr, "ImageZoomable: Nonexistent texture!\n");
-    return false;
-  }
-
-  if (textureWidth <= 0) {
-    fprintf(stderr, "ImageZoomable: Invalide width %f\n", textureWidth);
-    return false;
-  }
-  if (textureHeight <= 0) {
-    fprintf(stderr, "ImageZoomable: Invalide height %f\n", textureHeight);
     return false;
   }
   if (previewSize <= 0) {
@@ -30,7 +21,17 @@ bool ImGui::ImageZoomable(ImTextureID textureId, float textureWidth,
     return false;
   }
 
-  // TODO:  Do error checking here
+  float textureWidth = textureSize.x;
+  float textureHeight = textureSize.y;
+  if (textureWidth <= 0) {
+    fprintf(stderr, "ImageZoomable: Invalide width %f\n", textureWidth);
+    return false;
+  }
+  if (textureHeight <= 0) {
+    fprintf(stderr, "ImageZoomable: Invalide height %f\n", textureHeight);
+    return false;
+  }
+  
   ImGuiIO &io = ImGui::GetIO();
   ImVec2 pos = ImGui::GetCursorScreenPos();
   ImVec2 uv_min = ImVec2(0.0f, 0.0f); // Top-left
@@ -52,9 +53,8 @@ bool ImGui::ImageZoomable(ImTextureID textureId, float textureWidth,
     } else if (previewY > textureHeight - previewSize) {
       previewY = textureHeight - previewSize; // Clamp to bottom of image
     }
-    ImGui::Text("Min: (%.2f, %.2f)", previewX, previewY);
-    ImGui::Text("Max: (%.2f, %.2f)", previewX + previewSize,
-                previewY + previewSize);
+    ImGui::Text("X: %d", (int) previewX + (int)previewSize/2);
+    ImGui::Text("Y: %d", (int) previewY + (int)previewSize/2);
     ImVec2 uv0 = ImVec2((previewX) / textureWidth, (previewY) / textureHeight);
     ImVec2 uv1 = ImVec2((previewX + previewSize) / textureWidth,
                         (previewY + previewSize) / textureHeight);

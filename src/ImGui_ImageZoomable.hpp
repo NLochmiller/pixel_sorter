@@ -9,10 +9,13 @@ namespace ImGui {
 // (default: ImGuiCol_Border)
 // returns success
 bool ImageZoomable(
-    ImTextureID textureId, float textureWidth, float textureHeight,
-    float previewSize = 32.0f, float zoomFactor = 4.0f,
-    ImVec4 tintColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
+    ImTextureID textureId, ImVec2 textureSize, float previewSize = 32.0f,
+    float zoomFactor = 4.0f, ImVec4 tintColor = ImVec4(1.0f, 1.0f, 1.0f, 1.0f),
     ImVec4 borderColor = ImGui::GetStyleColorVec4(ImGuiCol_Border));
+
+// Add a variation of ImageZoomable where we provide a scaled size for the image
+// to be displayed as. Allows us to provide actual image size, and the size we
+// want it displayed at when the mouse is not hovering
 
 }; // namespace ImGui
 

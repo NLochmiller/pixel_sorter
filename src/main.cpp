@@ -308,122 +308,108 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
   ImGui::SetNextWindowSize(viewport->WorkSize);
 
   if (ImGui::Begin("Main window", NULL, windowFlags)) {
-    // Main group
-    ImGui::BeginGroup();
+    { // Color Conversion selection
+      // The pairs that make up the selection options
+      static std::pair<ColorConverter *, char *> converterOptions[] = {
+          std::make_pair(&(ColorConversion::red), (char *)"Red"),
+          std::make_pair(&ColorConversion::green, (char *)"Green"),
+          std::make_pair(&ColorConversion::blue, (char *)"Blue"),
+          std::make_pair(&ColorConversion::average, (char *)"Average"),
+          std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
+          std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
+          std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
+          std::make_pair(&ColorConversion::hue, (char *)"Hue"),
+          std::make_pair(&ColorConversion::saturation,
+                         (char *)"Saturation (HSV)"),
+          std::make_pair(&ColorConversion::value, (char *)"Value"),
+          std::make_pair(&ColorConversion::saturation_HSL,
+                         (char *)"Saturation (HSL)"),
+          std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
+      static const int convertersCount = arrayLen(converterOptions);
+      static int selected_converter_index = 11; // Use lightness as default
+      // Pass in the preview value visible before opening the combo (it could
+      // technically be different contents or not pulled from items[])
+      const char *combo_preview_value =
+          converterOptions[selected_converter_index].second;
+      static ImGuiComboFlags flags = 0;
+      // Display each item in combo
+      if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
+        for (int n = 0; n < convertersCount; n++) {
+          const bool is_selected = (selected_converter_index == n);
+          if (ImGui::Selectable(converterOptions[n].second, is_selected))
+            selected_converter_index = n;
+
+          // Set the initial focus when opening the combo (scrolling +
+          // keyboard navigation focus)
+          if (is_selected)
+            ImGui::SetItemDefaultFocus();
+        }
+        ImGui::EndCombo();
+      }
+      *converter = converterOptions[selected_converter_index].first; // update
+    }
+
+    const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
+
+    // Set the minimum and maximum percentages of values will be sorted
+    static float percentMin = 25.0;
+    static float percentMax = 75.0;
+    ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
+                           0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
+                           sliderFlags);
+
+    static float angle = 90.0;
+    ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f",
+                     sliderFlags);
+
+    { // Sorting button. Enabled only when there is an input surface
+      ImGui::BeginDisabled(inputSurface == NULL);
+      if (ImGui::Button("Sort")) {
+        // Angle input is human readable, account for screen 0,0 being top
+        // left
+        double flippedAngle = 360 - angle;
+        sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
+                     percentMin, percentMax, *converter);
+        outputTexture = updateTexture(renderer, outputSurface, outputTexture);
+      }
+      ImGui::EndDisabled();
+    }
+
+    ImGui::SameLine();
+
+    // Export button
     {
-      // Color Conversion selection
-      {
-        // The pairs that make up the selection options
-        static std::pair<ColorConverter *, char *> converterOptions[] = {
-            std::make_pair(&(ColorConversion::red), (char *)"Red"),
-            std::make_pair(&ColorConversion::green, (char *)"Green"),
-            std::make_pair(&ColorConversion::blue, (char *)"Blue"),
-            std::make_pair(&ColorConversion::average, (char *)"Average"),
-            std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
-            std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
-            std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
-            std::make_pair(&ColorConversion::hue, (char *)"Hue"),
-            std::make_pair(&ColorConversion::saturation,
-                           (char *)"Saturation (HSV)"),
-            std::make_pair(&ColorConversion::value, (char *)"Value"),
-            std::make_pair(&ColorConversion::saturation_HSL,
-                           (char *)"Saturation (HSL)"),
-            std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
-        static const int convertersCount = arrayLen(converterOptions);
-        static int selected_converter_index = 11; // Use lightness as default
-        // Pass in the preview value visible before opening the combo (it could
-        // technically be different contents or not pulled from items[])
-        const char *combo_preview_value =
-            converterOptions[selected_converter_index].second;
-        static ImGuiComboFlags flags = 0;
-        // Display each item in combo
-        if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
-          for (int n = 0; n < convertersCount; n++) {
-            const bool is_selected = (selected_converter_index == n);
-            if (ImGui::Selectable(converterOptions[n].second, is_selected))
-              selected_converter_index = n;
-
-            // Set the initial focus when opening the combo (scrolling +
-            // keyboard navigation focus)
-            if (is_selected)
-              ImGui::SetItemDefaultFocus();
-          }
-          ImGui::EndCombo();
-        }
-        *converter = converterOptions[selected_converter_index].first; // update
+      // TODO: Find if path is empty
+      bool isExportButtonDisabled =
+          (outputSurface == NULL) /* TODO: || PATH BAD */;
+      ImGui::BeginDisabled(isExportButtonDisabled);
+      if (ImGui::Button("Export")) {
+        fprintf(stderr, "export!\n");
+        // TODO: Save to export path.
       }
 
-      const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
+      ImGui::EndDisabled();
+    }
 
-      // Set the minimum and maximum percentages of values will be sorted
-      static float percentMin = 25.0;
-      static float percentMax = 75.0;
-      ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
-                             0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
-                             sliderFlags);
-
-      static float angle = 90.0;
-      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f",
-                       sliderFlags);
-
-      { // Sorting button. Enabled only when there is an input surface
-        ImGui::BeginDisabled(inputSurface == NULL);
-        if (ImGui::Button("Sort")) {
-          // Angle input is human readable, account for screen 0,0 being top
-          // left
-          double flippedAngle = 360 - angle;
-          sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
-                       percentMin, percentMax, *converter);
-          outputTexture = updateTexture(renderer, outputSurface, outputTexture);
-        }
-        ImGui::EndDisabled();
-      }
-
-      ImGui::SameLine();
-
-      // Export button
-      {
-        // TODO: Find if path is empty
-        bool isExportButtonDisabled =
-            (outputSurface == NULL) /* TODO: || PATH BAD */;
-        ImGui::BeginDisabled(isExportButtonDisabled);
-        if (ImGui::Button("Export")) {
-          fprintf(stderr, "export!\n");
-          // TODO: Save to export path.
-        }
-
-        ImGui::EndDisabled();
-      }
-
+    { // Images
       // Zoom slider
       static float imageZoom = 100.0;
       ImGui::DragFloat("Image zoom", &imageZoom, 1.0f, 0.0f, 500.0f,
                        "Zoom: %.2f%%", 0);
-
       // Display images
       double zoomPercent = imageZoom / 100.0f;
       // Display input image zoomed in to percent
       if (inputTexture != NULL) {
-        displayTexture(renderer, inputTexture, inputSurface->w * zoomPercent,
-                       inputSurface->h * zoomPercent);
+        displayTextureZoomable(renderer, inputTexture, inputSurface->w,
+                               inputSurface->h);
       }
 
       // Display output image zoomed in to percent
       if (outputTexture != NULL) {
-        displayTexture(renderer, outputTexture, outputSurface->w * zoomPercent,
-                       outputSurface->h * zoomPercent);
+        displayTextureZoomable(renderer, outputTexture, outputSurface->w,
+                               outputSurface->h);
       }
     }
-    ImGui::EndGroup();
-
-    // This is how to do a vertical layout, just split into 2 groups
-    ImGui::SameLine();
-    ImGui::BeginGroup();
-    {
-      ImGui::Text("First item on right");
-      ImGui::Text("Second item on right");
-    }
-    ImGui::EndGroup();
   }
   ImGui::End();
 
