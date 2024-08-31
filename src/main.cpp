@@ -391,9 +391,14 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::EndDisabled();
     }
 
-    int displayX = 200; // TODO: AUTO ASSIGN
-    int displayY = 200; // TODO: AUTO ASSIGN
-    {                   // Images
+    int displayX = 0; // TODO: AUTO ASSIGN
+    int displayY = 0; // TODO: AUTO ASSIGN
+
+    if (inputSurface != NULL) {
+      displayX = inputSurface->w * 0.1;
+      displayY = inputSurface->h * 0.1;
+    }
+    { // Images
       // Zoom slider
       static float minDimension = 100;
       static float previewNum = std::min(8.0f, minDimension);

@@ -64,19 +64,24 @@ bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
                             uint width, uint height, uint dwidth, uint dheight,
                             float previewNum, float previewSize) {
   // Get dimensions of the texture only if either width or height is zero
-  if (width == 0 || height == 0) {
-    int texture_width = 0;
-    int texture_height = 0;
-    SDL_QueryTexture(texture, NULL, NULL, &texture_width, &texture_height);
+  if (width == 0 || height == 0 || dwidth == 0 || dheight == 0) {
+    int textureWidth = 0;
+    int textureHeight = 0;
+    SDL_QueryTexture(texture, NULL, NULL, &textureWidth, &textureHeight);
     // Assign the dimesions as needed
     if (width == 0) {
-      width = texture_width;
+      width = textureWidth;
     }
     if (height == 0) {
-      height = texture_height;
+      height = textureHeight;
+    }
+    if (dwidth == 0) {
+      dwidth = textureWidth;
+    }
+    if (dheight == 0) {
+      dheight = textureHeight;
     }
   }
-
   ImGui::ImageZoomable((void *)texture, ImVec2(width, height),
                        ImVec2(dwidth, dheight), previewNum, previewSize);
   return true;
