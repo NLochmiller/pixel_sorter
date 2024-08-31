@@ -120,31 +120,31 @@ bool ImGui::ImageZoomable(ImTextureID textureId, ImVec2 textureSize,
   ImVec2 pos = ImGui::GetCursorScreenPos();
   ImVec2 uv_min = ImVec2(0.0f, 0.0f); // Top-left
   ImVec2 uv_max = ImVec2(1.0f, 1.0f); // Lower-right
-  // The amount that preview is multipled by to be the desired size
-  float zoom = previewNum / previewSize;
+    // The amount that preview is multipled by to be the desired size
+  float zoom = previewSize / previewNum;
   ImGui::Image(textureId, ImVec2(textureWidth, textureHeight), uv_min, uv_max,
                tintColor, borderColor);
   if (ImGui::BeginItemTooltip()) {
-    float previewX = io.MousePos.x - pos.x - previewSize * 0.5f;
-    float previewY = io.MousePos.y - pos.y - previewSize * 0.5f;
+    float previewX = io.MousePos.x - pos.x - previewNum * 0.5f;
+    float previewY = io.MousePos.y - pos.y - previewNum * 0.5f;
 
     if (previewX < 0.0f) {
       previewX = 0.0f; // Clamp to 0
-    } else if (previewX > textureWidth - previewSize) {
-      previewX = textureWidth - previewSize; // Clamp to right of image
+    } else if (previewX > textureWidth - previewNum) {
+      previewX = textureWidth - previewNum; // Clamp to right of image
     }
     if (previewY < 0.0f) {
       previewY = 0.0f; // Clamp to top of image
-    } else if (previewY > textureHeight - previewSize) {
-      previewY = textureHeight - previewSize; // Clamp to bottom of image
+    } else if (previewY > textureHeight - previewNum) {
+      previewY = textureHeight - previewNum; // Clamp to bottom of image
     }
-    ImGui::Text("X: %d", (int)previewX + (int)previewSize / 2);
-    ImGui::Text("Y: %d", (int)previewY + (int)previewSize / 2);
+    ImGui::Text("X: %d", (int)previewX + (int)previewNum / 2);
+    ImGui::Text("Y: %d", (int)previewY + (int)previewNum / 2);
     ImVec2 uv0 = ImVec2((previewX) / textureWidth, (previewY) / textureHeight);
-    ImVec2 uv1 = ImVec2((previewX + previewSize) / textureWidth,
-                        (previewY + previewSize) / textureHeight);
+    ImVec2 uv1 = ImVec2((previewX + previewNum) / textureWidth,
+                        (previewY + previewNum) / textureHeight);
     ImGui::Image(textureId,
-                 ImVec2(floor(previewSize * zoom), floor(previewSize * zoom)),
+                 ImVec2(floor(previewNum * zoom), floor(previewNum * zoom)),
                  uv0, uv1, tintColor, borderColor);
     ImGui::EndTooltip();
   }

@@ -391,32 +391,39 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::EndDisabled();
     }
 
-    { // Images
+    int displayX = 200; // TODO: AUTO ASSIGN
+    int displayY = 200; // TODO: AUTO ASSIGN
+    {                   // Images
       // Zoom slider
       static float minDimension = 100;
       static float previewNum = std::min(8.0f, minDimension);
+      // Slider for controlling the number of pixels in preview
       // Range from [1, min(width, height)] allowing full image previews
       ImGui::DragFloat("Pixels in section", &previewNum, 1.0f, 1.0f,
-                       minDimension, "Pixels: %.2f%%", 0);
-      ImVec2 viewSize = viewport->WorkSize; 
+                       minDimension, "Pixels in section: %.0f", 0);
+
+      // Slider for controlling the size of the preview
       // Set the standard preview window size to 1/5 the min dimension of window
-      static float previewSize = std::min(viewSize.x, viewSize.y) * 0.2;
-      ImGui::DragFloat("Size of preview", &previewSize, 1.0f, 0.0f, 500.0f,
-                       "Zoom: %.2f%%", 0);
+      static float previewSize =
+          std::min(viewport->WorkSize.x, viewport->WorkSize.y) * 0.2;
+      ImGui::DragFloat("Size of preview", &previewSize, 1.0f, 1.0f,
+                       minDimension * 0.25, "Size of preview: %.0f", 0);
 
       // Display input image zoomed in to percent
       if (inputTexture != NULL) {
         // Update the values that the sliders can have
         minDimension = std::min(inputSurface->w, inputSurface->h);
-        
+
         displayTextureZoomable(renderer, inputTexture, inputSurface->w,
-                               inputSurface->h, previewNum, previewSize);
+                               inputSurface->h, displayX, displayY, previewNum,
+                               previewSize);
       }
 
       // Display output image zoomed in to percent
       if (outputTexture != NULL) {
         displayTextureZoomable(renderer, outputTexture, outputSurface->w,
-                               outputSurface->h, previewNum, previewSize);
+                               outputSurface->h, displayX, displayY, previewNum,
+                               previewSize);
       }
     }
   }
