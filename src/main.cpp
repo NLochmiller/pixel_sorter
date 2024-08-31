@@ -394,6 +394,14 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
     int displayX = 0; // TODO: AUTO ASSIGN
     int displayY = 0; // TODO: AUTO ASSIGN
 
+    // Scale the images down to fit horizontally
+
+    static float scale = 0;
+    const static float imagePercentage = 0.1;
+    if (inputSurface != NULL) {
+      scale = imagePercentage * inputSurface->w / (viewport->WorkSize.x);
+    }
+
     { // Images
       // Zoom slider
       static float minDimension = 100;
@@ -404,7 +412,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::DragFloat("Pixels in section", &previewNum, 1.0f, 1.0f,
                        minDimension, "Pixels in section: %.0f", 0);
       previewNum = std::clamp(previewNum, 1.0f, minDimension);
-        
+
       // Slider for controlling the size of the preview
       // Set the standard preview window size to 1/5 the min dimension of window
       static float previewSize =
@@ -417,16 +425,23 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         // Update the values that the sliders can have
         minDimension = std::min(inputSurface->w, inputSurface->h);
 
+
+        displayX = inputSurface->w * scale;
+        displayY = inputSurface->h * scale;
+        
         displayTextureZoomable(renderer, inputTexture, inputSurface->w,
-                               inputSurface->h, displayX, displayY, previewNum,
-                               previewSize);
+                               inputSurface->h, displayX, displayY,
+                               previewNum, previewSize);
       }
 
+      ImGui::SameLine();
+
       // Display output image zoomed in to percent
-      if (outputTexture != NULL) {
-        displayTextureZoomable(renderer, outputTexture, outputSurface->w,
-                               outputSurface->h, displayX, displayY, previewNum,
-                               previewSize);
+      if (outputTexture != NULL && false) {
+        displayTextureZoomable(renderer, outputTexture,
+                               outputSurface->w,
+                               outputSurface->h, displayX, displayY,
+                               previewNum, previewSize);
       }
     }
   }
