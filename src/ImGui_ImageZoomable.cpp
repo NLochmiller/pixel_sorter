@@ -64,8 +64,8 @@ bool ImGui::ImageZoomable(ImTextureID textureId, ImVec2 textureSize,
   return true;
 }
 
+// returns the point relative to srcRect to be relative to dstRect
 ImVec2 scalePoint(ImVec2 srcRect, ImVec2 dstRect, ImVec2 pt) {
-
   // Compute the corresponding position in the destination rectangle
   ImVec2 scaledPoint;
   scaledPoint.x = pt.x * dstRect.x / srcRect.x;
@@ -79,7 +79,6 @@ ImVec2 scalePoint(ImVec2 srcRect, ImVec2 dstRect, ImVec2 pt) {
 // image the user can hover over will be.
 // Can optionally provide the tint color (default none),
 // and the border color (default: ImGuiCol_Border). Returns success
-
 bool ImGui::ImageZoomable(ImTextureID textureId, ImVec2 textureSize,
                           ImVec2 displaySize, float previewNum,
                           float previewSize, ImVec4 tintColor,
@@ -133,25 +132,18 @@ bool ImGui::ImageZoomable(ImTextureID textureId, ImVec2 textureSize,
   if (ImGui::BeginItemTooltip()) {
     float displayX = io.MousePos.x - pos.x;
     float displayY = io.MousePos.y - pos.y;
-
-    // displayX = std::clamp(displayX, 0.0f, displayWidth - previewNum);
-    // displayY = std::clamp(displayY, 0.0f, displayHeight - previewNum);
-
-    // displayX = textureWidth * displayX / displayWidth;
-    // displayY = textureHeight * displayY / displayHeight;
-
-    // Scale the point from the
+    // Scale the cursors location from the display to the texture
     ImVec2 textureOffset =
         scalePoint(displaySize, textureSize, ImVec2(displayX, displayY));
+    // Center preview around cursor
     textureOffset.x -= (previewNum * 0.5f);
     textureOffset.y -= (previewNum * 0.5f);
+    // Clamp the preview to inside the image, preventing clipping
     textureOffset.x =
         std::clamp(textureOffset.x, 0.0f, textureWidth - previewNum);
     textureOffset.y =
         std::clamp(textureOffset.y, 0.0f, textureHeight - previewNum);
 
-    ImGui::Text("X: %d", (int)textureOffset.x + (int)previewNum / 2);
-    ImGui::Text("Y: %d", (int)textureOffset.y + (int)previewNum / 2);
     ImVec2 uv0 =
         ImVec2(textureOffset.x / textureWidth, textureOffset.y / textureHeight);
     ImVec2 uv1 = ImVec2((textureOffset.x + previewNum) / textureWidth,
