@@ -394,19 +394,17 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
     int displayX = 0; // TODO: AUTO ASSIGN
     int displayY = 0; // TODO: AUTO ASSIGN
 
-    if (inputSurface != NULL) {
-      displayX = inputSurface->w * 0.1;
-      displayY = inputSurface->h * 0.1;
-    }
     { // Images
       // Zoom slider
       static float minDimension = 100;
       static float previewNum = std::min(8.0f, minDimension);
       // Slider for controlling the number of pixels in preview
       // Range from [1, min(width, height)] allowing full image previews
+
       ImGui::DragFloat("Pixels in section", &previewNum, 1.0f, 1.0f,
                        minDimension, "Pixels in section: %.0f", 0);
-
+      previewNum = std::clamp(previewNum, 1.0f, minDimension);
+        
       // Slider for controlling the size of the preview
       // Set the standard preview window size to 1/5 the min dimension of window
       static float previewSize =

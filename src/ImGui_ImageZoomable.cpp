@@ -1,4 +1,5 @@
 #include "ImGui_ImageZoomable.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 
@@ -45,30 +46,32 @@ bool ImGui::ImageZoomable(ImTextureID textureId, ImVec2 textureSize,
   ImGui::Image(textureId, ImVec2(textureWidth, textureHeight), uv_min, uv_max,
                tintColor, borderColor);
   if (ImGui::BeginItemTooltip()) {
-    float previewX = io.MousePos.x - pos.x - previewNum * 0.5f;
-    float previewY = io.MousePos.y - pos.y - previewNum * 0.5f;
+    float displayX = io.MousePos.x - pos.x - previewNum * 0.5f;
+    float displayY = io.MousePos.y - pos.y - previewNum * 0.5f;
+    displayX = std::clamp(displayX, 0.0f, textureWidth - previewNum);
+    displayY = std::clamp(displayY, 0.0f, textureHeight - previewNum);
 
-    if (previewX < 0.0f) {
-      previewX = 0.0f; // Clamp to 0
-    } else if (previewX > textureWidth - previewNum) {
-      previewX = textureWidth - previewNum; // Clamp to right of image
-    }
-    if (previewY < 0.0f) {
-      previewY = 0.0f; // Clamp to top of image
-    } else if (previewY > textureHeight - previewNum) {
-      previewY = textureHeight - previewNum; // Clamp to bottom of image
-    }
-    ImGui::Text("X: %d", (int)previewX + (int)previewNum / 2);
-    ImGui::Text("Y: %d", (int)previewY + (int)previewNum / 2);
-    ImVec2 uv0 = ImVec2((previewX) / textureWidth, (previewY) / textureHeight);
-    ImVec2 uv1 = ImVec2((previewX + previewNum) / textureWidth,
-                        (previewY + previewNum) / textureHeight);
+    ImGui::Text("X: %d", (int)displayX + (int)previewNum / 2);
+    ImGui::Text("Y: %d", (int)displayY + (int)previewNum / 2);
+    ImVec2 uv0 = ImVec2((displayX) / textureWidth, (displayY) / textureHeight);
+    ImVec2 uv1 = ImVec2((displayX + previewNum) / textureWidth,
+                        (displayY + previewNum) / textureHeight);
     ImGui::Image(textureId,
                  ImVec2(floor(previewNum * zoom), floor(previewNum * zoom)),
                  uv0, uv1, tintColor, borderColor);
     ImGui::EndTooltip();
   }
   return true;
+}
+
+ImVec2 scalePoint(ImVec2 srcRect, ImVec2 dstRect, ImVec2 pt) {
+
+  // Compute the corresponding position in the destination rectangle
+  ImVec2 scaledPoint;
+  scaledPoint.x = pt.x * dstRect.x / srcRect.x;
+  scaledPoint.y = pt.y * dstRect.y / srcRect.y;
+
+  return scaledPoint;
 }
 
 // Must provide the texture id, and width height of source texture.
@@ -118,31 +121,41 @@ bool ImGui::ImageZoomable(ImTextureID textureId, ImVec2 textureSize,
 
   ImGuiIO &io = ImGui::GetIO();
   ImVec2 pos = ImGui::GetCursorScreenPos();
+  // The amount that preview is multipled by to be the desired size
+  float zoom = previewSize / previewNum;
   ImVec2 uv_min = ImVec2(0.0f, 0.0f); // Top-left
   ImVec2 uv_max = ImVec2(1.0f, 1.0f); // Lower-right
-    // The amount that preview is multipled by to be the desired size
-  float zoom = previewSize / previewNum;
-  ImGui::Image(textureId, ImVec2(textureWidth, textureHeight), uv_min, uv_max,
-               tintColor, borderColor);
-  if (ImGui::BeginItemTooltip()) {
-    float previewX = io.MousePos.x - pos.x - previewNum * 0.5f;
-    float previewY = io.MousePos.y - pos.y - previewNum * 0.5f;
 
-    if (previewX < 0.0f) {
-      previewX = 0.0f; // Clamp to 0
-    } else if (previewX > textureWidth - previewNum) {
-      previewX = textureWidth - previewNum; // Clamp to right of image
-    }
-    if (previewY < 0.0f) {
-      previewY = 0.0f; // Clamp to top of image
-    } else if (previewY > textureHeight - previewNum) {
-      previewY = textureHeight - previewNum; // Clamp to bottom of image
-    }
-    ImGui::Text("X: %d", (int)previewX + (int)previewNum / 2);
-    ImGui::Text("Y: %d", (int)previewY + (int)previewNum / 2);
-    ImVec2 uv0 = ImVec2((previewX) / textureWidth, (previewY) / textureHeight);
-    ImVec2 uv1 = ImVec2((previewX + previewNum) / textureWidth,
-                        (previewY + previewNum) / textureHeight);
+  // Draw normal image
+  ImGui::Image(textureId, ImVec2(displayWidth, displayHeight), uv_min, uv_max,
+               tintColor, borderColor);
+
+  if (ImGui::BeginItemTooltip()) {
+    float displayX = io.MousePos.x - pos.x;
+    float displayY = io.MousePos.y - pos.y;
+
+    // displayX = std::clamp(displayX, 0.0f, displayWidth - previewNum);
+    // displayY = std::clamp(displayY, 0.0f, displayHeight - previewNum);
+
+    // displayX = textureWidth * displayX / displayWidth;
+    // displayY = textureHeight * displayY / displayHeight;
+
+    // Scale the point from the
+    ImVec2 textureOffset =
+        scalePoint(displaySize, textureSize, ImVec2(displayX, displayY));
+    textureOffset.x -= (previewNum * 0.5f);
+    textureOffset.y -= (previewNum * 0.5f);
+    textureOffset.x =
+        std::clamp(textureOffset.x, 0.0f, textureWidth - previewNum);
+    textureOffset.y =
+        std::clamp(textureOffset.y, 0.0f, textureHeight - previewNum);
+
+    ImGui::Text("X: %d", (int)textureOffset.x + (int)previewNum / 2);
+    ImGui::Text("Y: %d", (int)textureOffset.y + (int)previewNum / 2);
+    ImVec2 uv0 =
+        ImVec2(textureOffset.x / textureWidth, textureOffset.y / textureHeight);
+    ImVec2 uv1 = ImVec2((textureOffset.x + previewNum) / textureWidth,
+                        (textureOffset.y + previewNum) / textureHeight);
     ImGui::Image(textureId,
                  ImVec2(floor(previewNum * zoom), floor(previewNum * zoom)),
                  uv0, uv1, tintColor, borderColor);
