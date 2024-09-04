@@ -39,15 +39,25 @@ void experimentalImageDisplayer(
     SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
     SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
     float &minDimension, float &previewNum, float &previewSize) {
-  int displayX = 0; // TODO: AUTO ASSIGN
-  int displayY = 0; // TODO: AUTO ASSIGN
-  // Scale the images down to fit horizontally
-  static float scale = 0;
-  if (inputSurface != NULL) {
-    scale = 0.1 * inputSurface->w / viewport->WorkSize.x;
-  }
 
-  { // Images
+  static ImVec2 childSize = ImVec2(0, 0);
+  ImGuiChildFlags flags = 0; // ImGuiChildFlags_Border;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration;
+
+  if (ImGui::BeginChild("Image display child", ImVec2(0, 0), flags,
+                        windowFlags)) { // Images
+
+    childSize = ImGui::GetWindowSize();
+
+    static int displayX = 0; // TODO: AUTO ASSIGN
+    static int displayY = 0; // TODO: AUTO ASSIGN
+    // Scale the images down to fit horizontally
+    static float scale = 0;
+    if (inputSurface != NULL) {
+      scale = childSize.x / inputSurface->w;
+      printf("Child is %.0f, image is %d, scale is %f, scaled is %d\n",
+             childSize.x, inputSurface->w, scale, displayX);
+    }
 
     // Display input image zoomed in to percent
     if (inputTexture != NULL) {
@@ -68,6 +78,8 @@ void experimentalImageDisplayer(
                              outputSurface->h, displayX, displayY, previewNum,
                              previewSize);
     }
+
+    ImGui::EndChild();
   }
 }
 
