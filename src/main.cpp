@@ -34,12 +34,11 @@ using LineCollision::pointQueue;
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
 // Display the images, for now layout where input above output
-void experimentalImageDisplayer(const ImGuiViewport *viewport,
-                                SDL_Renderer *renderer,
-                                SDL_Surface *&inputSurface,
-                                SDL_Texture *&inputTexture,
-                                SDL_Surface *&outputSurface,
-                                SDL_Texture *&outputTexture) {
+void experimentalImageDisplayer(
+    const ImGuiViewport *viewport, SDL_Renderer *renderer,
+    SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
+    SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
+    float &minDimension, float &previewNum, float &previewSize) {
   int displayX = 0; // TODO: AUTO ASSIGN
   int displayY = 0; // TODO: AUTO ASSIGN
   // Scale the images down to fit horizontally
@@ -49,21 +48,6 @@ void experimentalImageDisplayer(const ImGuiViewport *viewport,
   }
 
   { // Images
-    // Zoom slider
-    static float minDimension = 100;
-    static float previewNum = std::min(8.0f, minDimension);
-    // Slider for controlling the number of pixels in preview
-    // Range from [1, min(width, height)] allowing full image previews
-    ImGui::DragFloat("Pixels in section", &previewNum, 1.0f, 1.0f, minDimension,
-                     "Pixels in section: %.0f", 0);
-    previewNum = std::clamp(previewNum, 1.0f, minDimension);
-
-    // Slider for controlling the size of the preview
-    // Set the standard preview window size to 1/5 the min dimension of window
-    static float previewSize =
-        std::min(viewport->WorkSize.x, viewport->WorkSize.y) * 0.2;
-    ImGui::DragFloat("Size of preview", &previewSize, 1.0f, 1.0f,
-                     minDimension * 0.25, "Size of preview: %.0f", 0);
 
     // Display input image zoomed in to percent
     if (inputTexture != NULL) {
@@ -445,9 +429,26 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::EndDisabled();
     }
 
+    // Zoom slider
+    static float minDimension = 100;
+    static float previewNum = std::min(8.0f, minDimension);
+    // Slider for controlling the number of pixels in preview
+    // Range from [1, min(width, height)] allowing full image previews
+    ImGui::DragFloat("Pixels in section", &previewNum, 1.0f, 1.0f, minDimension,
+                     "Pixels in section: %.0f", 0);
+    previewNum = std::clamp(previewNum, 1.0f, minDimension);
+
+    // Slider for controlling the size of the preview
+    // Set the standard preview window size to 1/5 the min dimension of window
+    static float previewSize =
+        std::min(viewport->WorkSize.x, viewport->WorkSize.y) * 0.2;
+    ImGui::DragFloat("Size of preview", &previewSize, 1.0f, 1.0f,
+                     minDimension * 0.25, "Size of preview: %.0f", 0);
+
     // TODO: Implement fully
     experimentalImageDisplayer(viewport, renderer, inputSurface, inputTexture,
-                               outputSurface, outputTexture);
+                               outputSurface, outputTexture, minDimension,
+                               previewNum, previewSize);
   }
   ImGui::End();
 
