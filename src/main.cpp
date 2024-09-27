@@ -7,6 +7,8 @@
 #include "SDL_render.h"
 #include "SDL_surface.h"
 
+// Enable math operators for imgui
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -33,6 +35,34 @@ using LineCollision::pointQueue;
 // Definition of constants
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
+// Clamp source to fit within bounds while maintaing width/height ratio.
+// returns the clamped ImVec2
+ImVec2 clampImVec2ToBounds(const ImVec2 &source, const ImVec2 &bounds) {
+  ImVec2 clamped;
+  // If source fits in bounds, return a copy of source.
+  if (source.x <= bounds.x && source.y <= bounds.y) {
+    clamped.x = source.x;
+    clamped.y = source.y;
+    return clamped;
+  }
+
+  // Calculate the width-to-height ratio of source
+  float source_size_ratio = source.x / source.y;
+
+  // Determine new dimensions for clamped based on bounds' dimensions
+  if (bounds.x / bounds.y > source_size_ratio) {
+    // If bounds is wider than the ratio as source, adjust by height
+    clamped.y = bounds.y;
+    clamped.x = clamped.y * source_size_ratio;
+  } else {
+    // If bounds is taller than or has the same ratio as height, adjust by width
+    clamped.x = bounds.x;
+    clamped.y = clamped.x / source_size_ratio;
+  }
+
+  return clamped;
+}
+
 // Display the images, for now layout where input above output
 void experimentalImageDisplayer(
     const ImGuiViewport *viewport, SDL_Renderer *renderer,
@@ -42,40 +72,52 @@ void experimentalImageDisplayer(
 
   static ImVec2 childSize = ImVec2(0, 0);
   ImGuiChildFlags flags = 0; // ImGuiChildFlags_Border;
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration;
-
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration * 0; // TODO undo
+  ImGui::SetNextWindowBgAlpha(1.0); // TODO REMOVE temporary for testing
   if (ImGui::BeginChild("Image display child", ImVec2(0, 0), flags,
-                        windowFlags)) { // Images
+                        windowFlags)) {
 
     childSize = ImGui::GetWindowSize();
 
-    static int displayX = 0; // TODO: AUTO ASSIGN
-    static int displayY = 0; // TODO: AUTO ASSIGN
-    // Scale the images down to fit horizontally
-    static float scale = 0;
-    if (inputSurface != NULL) {
-      scale = childSize.x / inputSurface->w;
-      printf("Child is %.0f, image is %d, scale is %f, scaled is %d\n",
-             childSize.x, inputSurface->w, scale, displayX);
+    ImVec2 display = ImVec2(0, 0);
+
+    // Calculate the maximum size that each image is allowed to take up
+    bool isImageHorizontal = false; // If the image is wider than tall
+
+    ImVec2 max_image_scale = ImVec2(childSize.x, childSize.y);
+
+    // Reduce valid area to account for padding
+    ImGuiStyle &style = ImGui::GetStyle();
+    max_image_scale = max_image_scale - style.ItemSpacing - style.WindowPadding;
+
+    if (isImageHorizontal) {
+      // Do the images on top of each other
+
+      max_image_scale.y /= 2;
+    } else {
+      // Do the images side by side
+      max_image_scale.x /= 2;
     }
 
     // Display input image zoomed in to percent
     if (inputTexture != NULL) {
-      // Update the values that the sliders can have
-      minDimension = std::min(inputSurface->w, inputSurface->h);
-      displayX = inputSurface->w * scale;
-      displayY = inputSurface->h * scale;
+      // We have an image, display it
+      ImVec2 input_image_scale = ImVec2(inputSurface->w, inputSurface->h);
+      display = clampImVec2ToBounds(input_image_scale, max_image_scale);
       displayTextureZoomable(renderer, inputTexture, inputSurface->w,
-                             inputSurface->h, displayX, displayY, previewNum,
+                             inputSurface->h, display.x, display.y, previewNum,
                              previewSize);
     }
 
-    ImGui::SameLine();
+    // Display vertical aspect images on the same line
+    if (!isImageHorizontal) {
+      ImGui::SameLine();
+    }
 
     // Display output image zoomed in to percent
-    if (outputTexture != NULL && false) {
+    if (outputTexture != NULL) {
       displayTextureZoomable(renderer, outputTexture, outputSurface->w,
-                             outputSurface->h, displayX, displayY, previewNum,
+                             outputSurface->h, display.x, display.y, previewNum,
                              previewSize);
     }
 
@@ -306,11 +348,18 @@ int main(int, char **) {
       }
       outputFileDialog.ClearSelected();
     }
+    // TODO BEGIN REMOVE
+    bool debug_show_style = false;
+    if (debug_show_style) {
+      ImGui::Begin("style");
+      ImGui::ShowStyleEditor(NULL);
+      ImGui::End();
+    }
+    // TODO END REMOVE
 
     render(renderer);
   }
-  /* === END OF MAIN LOOP ===================================================
-   */
+  /* === END OF MAIN LOOP =================================================== */
 
   // Cleanup
   ImGui_ImplSDLRenderer2_Shutdown();
