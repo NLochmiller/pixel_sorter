@@ -414,63 +414,74 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
   ImGui::SetNextWindowSize(viewport->WorkSize);
 
   if (ImGui::Begin("Main window", NULL, windowFlags)) {
-    { // Color Conversion selection
-      // The pairs that make up the selection options
-      static std::pair<ColorConverter *, char *> converterOptions[] = {
-          std::make_pair(&(ColorConversion::red), (char *)"Red"),
-          std::make_pair(&ColorConversion::green, (char *)"Green"),
-          std::make_pair(&ColorConversion::blue, (char *)"Blue"),
-          std::make_pair(&ColorConversion::average, (char *)"Average"),
-          std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
-          std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
-          std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
-          std::make_pair(&ColorConversion::hue, (char *)"Hue"),
-          std::make_pair(&ColorConversion::saturation,
-                         (char *)"Saturation (HSV)"),
-          std::make_pair(&ColorConversion::value, (char *)"Value"),
-          std::make_pair(&ColorConversion::saturation_HSL,
-                         (char *)"Saturation (HSL)"),
-          std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
-      static const int convertersCount = arrayLen(converterOptions);
-      static int selected_converter_index = 11; // Use lightness as default
-      // Pass in the preview value visible before opening the combo (it could
-      // technically be different contents or not pulled from items[])
-      const char *combo_preview_value =
-          converterOptions[selected_converter_index].second;
-      static ImGuiComboFlags flags = 0;
-      // Display each item in combo
-      if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
-        for (int n = 0; n < convertersCount; n++) {
-          const bool is_selected = (selected_converter_index == n);
-          if (ImGui::Selectable(converterOptions[n].second, is_selected))
-            selected_converter_index = n;
-
-          // Set the initial focus when opening the combo (scrolling +
-          // keyboard navigation focus)
-          if (is_selected)
-            ImGui::SetItemDefaultFocus();
-        }
-        ImGui::EndCombo();
-      }
-      *converter = converterOptions[selected_converter_index].first; // update
-    }
-
-    const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
-
-    // Set the minimum and maximum percentages of values will be sorted
+    // Values used throughout this menu
+    static float angle = 0;
     static float percentMin = 25.0;
     static float percentMax = 75.0;
-    ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
-                           0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
-                           sliderFlags);
 
-    // Get angle user desires
-    static float angle = 0;
-    {
+    /* === Top options, sorting. ============================================ */
+    static ImGuiTableFlags table_flags = ImGuiTableFlags_SizingStretchProp;
+    if (ImGui::BeginTable("Sort options menu", 2, table_flags)) {
+      int column_id = 0;      
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(column_id++);
+
+      // Color Conversion selection
+      // The pairs that make up the selection options
+      {
+        static std::pair<ColorConverter *, char *> converterOptions[] = {
+            std::make_pair(&(ColorConversion::red), (char *)"Red"),
+            std::make_pair(&ColorConversion::green, (char *)"Green"),
+            std::make_pair(&ColorConversion::blue, (char *)"Blue"),
+            std::make_pair(&ColorConversion::average, (char *)"Average"),
+            std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
+            std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
+            std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
+            std::make_pair(&ColorConversion::hue, (char *)"Hue"),
+            std::make_pair(&ColorConversion::saturation,
+                           (char *)"Saturation (HSV)"),
+            std::make_pair(&ColorConversion::value, (char *)"Value"),
+            std::make_pair(&ColorConversion::saturation_HSL,
+                           (char *)"Saturation (HSL)"),
+            std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
+        static const int convertersCount = arrayLen(converterOptions);
+        static int selected_converter_index = 11; // Use lightness as default
+        // Pass in the preview value visible before opening the combo (it
+        // could technically be different contents or not pulled from items[])
+        const char *combo_preview_value =
+            converterOptions[selected_converter_index].second;
+        static ImGuiComboFlags flags = 0;
+        // Display each item in combo
+        if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
+          for (int n = 0; n < convertersCount; n++) {
+            const bool is_selected = (selected_converter_index == n);
+            if (ImGui::Selectable(converterOptions[n].second, is_selected))
+              selected_converter_index = n;
+
+            // Set the initial focus when opening the combo (scrolling +
+            // keyboard navigation focus)
+            if (is_selected)
+              ImGui::SetItemDefaultFocus();
+          }
+          ImGui::EndCombo();
+        }
+        *converter = converterOptions[selected_converter_index].first; // update
+      }
+
+      const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
+
+      // Set the minimum and maximum percentages of values will be sorted
+      ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
+                             0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
+                             sliderFlags);
+
+      /* === End of left half =============================================== */
+      ImGui::TableSetColumnIndex(column_id++);
+      /* === Right half. Get angle user wants to sort at ==================== */
+
       const static float low_rd = 0.0f;     // low value for radians & degrees
       const static float high_d = 360;      // High value for degrees
       const static float high_r = 2 * M_PI; // High value for radians
-
       float knob_radius = 50.0f;
       float knob_angle = DEG_TO_RAD(angle);
       if (ImGui::Knob("##Sort angle knob", &knob_angle, knob_radius)) {
@@ -479,23 +490,24 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         std::clamp(angle, low_rd, high_r);
       }
 
-      ImGui::PushItemWidth(knob_radius * 2); // TODO: Make auto
+      ImGui::SetNextItemWidth(knob_radius * 2);
       // Convert to human readable angle
       float displayAngle = std::clamp((float)(360 - angle), low_rd, high_d);
       if (ImGui::DragFloat("##Sort angle", &displayAngle, 1.0f, 0.0f, 360.0f,
                            "%.2f", sliderFlags | ImGuiSliderFlags_WrapAround)) {
-        // There has been a change. Change the angle to repersent this change
-        // in the display angle
+        // There has been a change. Change the angle to repersent this
+        // change in the display angle
         angle = (360 - displayAngle);
         std::clamp(angle, low_rd, high_d);
       }
-      ImGui::PopItemWidth();
+      /* === End of angle options =========================================== */
     }
+    ImGui::EndTable();
+    /* === End of top options =============================================== */
 
     { // Sorting button. Enabled only when there is an input surface
       ImGui::BeginDisabled(inputSurface == NULL);
       if (ImGui::Button("Sort")) {
-        printf("angle is %.2f\n", angle);
         sort_wrapper(renderer, inputSurface, outputSurface, angle, percentMin,
                      percentMax, *converter);
         outputTexture = updateTexture(renderer, outputSurface, outputTexture);
