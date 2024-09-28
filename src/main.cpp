@@ -420,11 +420,14 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
     static float percentMax = 75.0;
 
     /* === Top options, sorting. ============================================ */
-    static ImGuiTableFlags table_flags = ImGuiTableFlags_SizingStretchProp;
+    static ImGuiTableFlags table_flags = ImGuiTableFlags_SizingStretchSame;
     if (ImGui::BeginTable("Sort options menu", 2, table_flags)) {
-      int column_id = 0;      
+      int column_id = 0;
       ImGui::TableNextRow();
       ImGui::TableSetColumnIndex(column_id++);
+
+      ImGui::Text("Sort by");
+      ImGui::SameLine();
 
       // Color Conversion selection
       // The pairs that make up the selection options
@@ -452,7 +455,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
             converterOptions[selected_converter_index].second;
         static ImGuiComboFlags flags = 0;
         // Display each item in combo
-        if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
+        if (ImGui::BeginCombo("##PixelQuantizer", combo_preview_value, flags)) {
           for (int n = 0; n < convertersCount; n++) {
             const bool is_selected = (selected_converter_index == n);
             if (ImGui::Selectable(converterOptions[n].second, is_selected))
