@@ -1,8 +1,10 @@
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <stdio.h>
 
+#include "Knob.hpp"
 #include "SDL_pixels.h"
 #include "SDL_render.h"
 #include "SDL_surface.h"
@@ -462,9 +464,26 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                            0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
                            sliderFlags);
 
-    static float angle = 90.0;
-    ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f",
-                     sliderFlags);
+    static float angle = 0;
+    const static float low = 0.0f;
+    const static float high_angle = 360;
+    const static float high_radian = 2 * M_PI;
+    float displayAngle =
+        std::clamp((float)(360 - (angle * 180 / M_PI)), low, high_angle);
+
+    if (ImGui::DragFloat("Sort angle", &displayAngle, 1.0f, 0.0f, 360.0f,
+                         "%.2f", sliderFlags)) {
+      // There has been a change. Change the angle to repersent this change
+      // in the display angle
+      angle = (360 - displayAngle) * M_PI / 180;
+      std::clamp(angle, low, high_radian);
+    }
+    float knob_angle = angle;
+    if (ImGui::Knob("Sort angle knob", &knob_angle, 50.0f)) {
+      // Knob has caused a change, update the angle
+      angle = knob_angle;
+      std::clamp(angle, low, high_radian);
+    }
 
     { // Sorting button. Enabled only when there is an input surface
       ImGui::BeginDisabled(inputSurface == NULL);

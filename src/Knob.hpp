@@ -6,8 +6,8 @@
 #define KNOB_HPP_
 
 namespace ImGui {
-  // Simple knob. Works in radians. 
-  bool Knob(const char *label, double &angle, float radius);
-}
+// Simple knob. Works in radians.
+  bool Knob(const char *label, float *angle, float radius);
+} // namespace ImGui
 
 #endif // KNOB_HPP_
