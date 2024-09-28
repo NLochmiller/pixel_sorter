@@ -125,9 +125,8 @@ void displayTiledZoomableImages(
                              outputSurface->h, display.x, display.y, previewNum,
                              previewSize);
     }
-
-    ImGui::EndChild();
   }
+  ImGui::EndChild();
 }
 
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel
@@ -316,7 +315,7 @@ int main(int, char **) {
     if (inputFileDialog.HasSelected()) {
       inputSurface = IMG_Load(inputFileDialog.GetSelected().c_str());
       if (inputSurface == NULL) {
-        // TODO cancel file broser exit on error
+        // TODO cancel file browser exit on error
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
@@ -512,7 +511,6 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
     ImGui::DragFloat("Size of preview", &previewSize, 1.0f, 1.0f,
                      minDimension * 0.25, "Size of preview: %.0f", 0);
 
-    // TODO: Implement fully
     displayTiledZoomableImages(viewport, renderer, inputSurface, inputTexture,
                                outputSurface, outputTexture, minDimension,
                                previewNum, previewSize);
