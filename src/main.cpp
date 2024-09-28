@@ -471,21 +471,25 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       const static float high_d = 360;      // High value for degrees
       const static float high_r = 2 * M_PI; // High value for radians
 
+      float knob_radius = 50.0f;
+      float knob_angle = DEG_TO_RAD(angle);
+      if (ImGui::Knob("##Sort angle knob", &knob_angle, knob_radius)) {
+        // Knob has caused a change, update the angle
+        angle = RAD_TO_DEG(knob_angle);
+        std::clamp(angle, low_rd, high_r);
+      }
+
+      ImGui::PushItemWidth(knob_radius * 2); // TODO: Make auto
       // Convert to human readable angle
       float displayAngle = std::clamp((float)(360 - angle), low_rd, high_d);
-      if (ImGui::DragFloat("Sort angle", &displayAngle, 1.0f, 0.0f, 360.0f,
-                           "%.2f", sliderFlags)) {
+      if (ImGui::DragFloat("##Sort angle", &displayAngle, 1.0f, 0.0f, 360.0f,
+                           "%.2f", sliderFlags | ImGuiSliderFlags_WrapAround)) {
         // There has been a change. Change the angle to repersent this change
         // in the display angle
         angle = (360 - displayAngle);
         std::clamp(angle, low_rd, high_d);
       }
-      float knob_angle = DEG_TO_RAD(angle);
-      if (ImGui::Knob("Sort angle knob", &knob_angle, 50.0f)) {
-        // Knob has caused a change, update the angle
-        angle = RAD_TO_DEG(knob_angle);
-        std::clamp(angle, low_rd, high_r);
-      }
+      ImGui::PopItemWidth();
     }
 
     { // Sorting button. Enabled only when there is an input surface
