@@ -63,6 +63,20 @@ ImVec2 clampImVec2ToBounds(const ImVec2 &source, const ImVec2 &bounds) {
   return clamped;
 }
 
+ImVec2 scaleImages(const ImVec2 &source, const ImVec2 &bounds) {
+  // Calculate scaling factors for both images
+  float width_scale = bounds.x / source.x;
+  float height_scale = bounds.y / source.y;
+  float scale = std::min(width_scale, height_scale);
+
+  // Calculate scaled dimensions for both images (they will be the same)
+  return ImVec2(scale * source.x, scale * source.y);
+}
+
+// Display the images in either a horizontal or vertical layout.
+// layout depends on the 
+// void displayTiledImages()
+
 // Display the images, for now layout where input above output
 void experimentalImageDisplayer(
     const ImGuiViewport *viewport, SDL_Renderer *renderer,
@@ -71,46 +85,62 @@ void experimentalImageDisplayer(
     float &minDimension, float &previewNum, float &previewSize) {
 
   static ImVec2 childSize = ImVec2(0, 0);
-  ImGuiChildFlags flags = 0; // ImGuiChildFlags_Border;
-  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration * 0; // TODO undo
-  ImGui::SetNextWindowBgAlpha(1.0); // TODO REMOVE temporary for testing
-  if (ImGui::BeginChild("Image display child", ImVec2(0, 0), flags,
+  ImGuiChildFlags childFlags = 0;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration;
+
+  /* Calculate which layout to use, and display image size */
+  if (ImGui::BeginChild("Image display child", ImVec2(0, 0), childFlags,
                         windowFlags)) {
-
     childSize = ImGui::GetWindowSize();
-
     ImVec2 display = ImVec2(0, 0);
-
     // Calculate the maximum size that each image is allowed to take up
-    bool isImageHorizontal = false; // If the image is wider than tall
-
-    ImVec2 max_image_scale = ImVec2(childSize.x, childSize.y);
-
-    // Reduce valid area to account for padding
+    bool useHoriLayout = true; // Should we use the horizontal layout?
     ImGuiStyle &style = ImGui::GetStyle();
-    max_image_scale = max_image_scale - style.ItemSpacing - style.WindowPadding;
-
-    if (isImageHorizontal) {
-      // Do the images on top of each other
-
-      max_image_scale.y /= 2;
-    } else {
-      // Do the images side by side
-      max_image_scale.x /= 2;
-    }
+    // Maximum area that both images are in, accounting for padding
+    ImVec2 max_images_area = ImVec2(childSize.x, childSize.y);
+    max_images_area = max_images_area - style.WindowPadding;
 
     // Display input image zoomed in to percent
     if (inputTexture != NULL) {
       // We have an image, display it
       ImVec2 input_image_scale = ImVec2(inputSurface->w, inputSurface->h);
-      display = clampImVec2ToBounds(input_image_scale, max_image_scale);
+      // display = clampImVec2ToBounds(input_image_scale, max_image_scale);
+      // Store the original area of max_images_area to restore later
+      ImVec2 original_size = max_images_area;
+
+      /* Calculate size for the horizontal layout */
+      // Account for spacing, then divide horizontally to find spacing for
+      // the horizontal layout
+      max_images_area.x = (max_images_area.x - style.ItemSpacing.x) / 2;
+      ImVec2 display_h = scaleImages(input_image_scale, max_images_area);
+      max_images_area = original_size;
+
+      /* Calculate size for the vertical layout */
+      // Account for spacing, then divide horizontally to find spacing for
+      // the horizontal layout
+      max_images_area.y = (max_images_area.y - style.ItemSpacing.y) / 2;
+      ImVec2 display_v = scaleImages(input_image_scale, max_images_area);
+      max_images_area = original_size;
+
+      // Find the maximum area either image can occupy
+      if (display_h.x >= display_v.x) {
+        useHoriLayout = true; // Use horizontal layout
+        display = display_h;
+      } else {
+        useHoriLayout = false; // Use vertical layoyt
+        display = display_v;
+      }
+    }
+
+    /* Display images */
+    if (inputSurface != NULL) {
       displayTextureZoomable(renderer, inputTexture, inputSurface->w,
                              inputSurface->h, display.x, display.y, previewNum,
                              previewSize);
     }
 
     // Display vertical aspect images on the same line
-    if (!isImageHorizontal) {
+    if (useHoriLayout) {
       ImGui::SameLine();
     }
 
