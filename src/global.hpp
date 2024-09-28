@@ -20,4 +20,8 @@ template <class Type, std::ptrdiff_t n> std::ptrdiff_t arrayLen(Type (&)[n]) {
   return n;
 }
 
+// Convert degrees to radians
+#define DEG_TO_RAD(_a_) _a_ * M_PI / 180;
+#define RAD_TO_DEG(_a_) _a_ * 180 / M_PI;
+
 #endif // GLOBAL_HPP_

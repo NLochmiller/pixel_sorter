@@ -464,35 +464,36 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                            0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
                            sliderFlags);
 
+    // Get angle user desires
     static float angle = 0;
-    const static float low = 0.0f;
-    const static float high_angle = 360;
-    const static float high_radian = 2 * M_PI;
-    float displayAngle =
-        std::clamp((float)(360 - (angle * 180 / M_PI)), low, high_angle);
+    {
+      const static float low_rd = 0.0f;     // low value for radians & degrees
+      const static float high_d = 360;      // High value for degrees
+      const static float high_r = 2 * M_PI; // High value for radians
 
-    if (ImGui::DragFloat("Sort angle", &displayAngle, 1.0f, 0.0f, 360.0f,
-                         "%.2f", sliderFlags)) {
-      // There has been a change. Change the angle to repersent this change
-      // in the display angle
-      angle = (360 - displayAngle) * M_PI / 180;
-      std::clamp(angle, low, high_radian);
-    }
-    float knob_angle = angle;
-    if (ImGui::Knob("Sort angle knob", &knob_angle, 50.0f)) {
-      // Knob has caused a change, update the angle
-      angle = knob_angle;
-      std::clamp(angle, low, high_radian);
+      // Convert to human readable angle
+      float displayAngle = std::clamp((float)(360 - angle), low_rd, high_d);
+      if (ImGui::DragFloat("Sort angle", &displayAngle, 1.0f, 0.0f, 360.0f,
+                           "%.2f", sliderFlags)) {
+        // There has been a change. Change the angle to repersent this change
+        // in the display angle
+        angle = (360 - displayAngle);
+        std::clamp(angle, low_rd, high_d);
+      }
+      float knob_angle = DEG_TO_RAD(angle);
+      if (ImGui::Knob("Sort angle knob", &knob_angle, 50.0f)) {
+        // Knob has caused a change, update the angle
+        angle = RAD_TO_DEG(knob_angle);
+        std::clamp(angle, low_rd, high_r);
+      }
     }
 
     { // Sorting button. Enabled only when there is an input surface
       ImGui::BeginDisabled(inputSurface == NULL);
       if (ImGui::Button("Sort")) {
-        // Angle input is human readable, account for screen 0,0 being top
-        // left
-        double flippedAngle = 360 - angle;
-        sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
-                     percentMin, percentMax, *converter);
+        printf("angle is %.2f\n", angle);
+        sort_wrapper(renderer, inputSurface, outputSurface, angle, percentMin,
+                     percentMax, *converter);
         outputTexture = updateTexture(renderer, outputSurface, outputTexture);
       }
       ImGui::EndDisabled();
