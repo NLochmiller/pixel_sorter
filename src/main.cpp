@@ -35,35 +35,12 @@ using LineCollision::pointQueue;
 // Definition of constants
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
-// Clamp source to fit within bounds while maintaing width/height ratio.
-// returns the clamped ImVec2
-ImVec2 clampImVec2ToBounds(const ImVec2 &source, const ImVec2 &bounds) {
-  ImVec2 clamped;
-  // If source fits in bounds, return a copy of source.
-  if (source.x <= bounds.x && source.y <= bounds.y) {
-    clamped.x = source.x;
-    clamped.y = source.y;
-    return clamped;
+// Scale source such that it takes up the most space it can within bounds.
+ImVec2 maximizeImVec2WithinBounds(const ImVec2 &source, const ImVec2 &bounds) {
+  // Error check
+  if (source.x <= 0 || source.y <= 0) {
+    return ImVec2(0, 0);
   }
-
-  // Calculate the width-to-height ratio of source
-  float source_size_ratio = source.x / source.y;
-
-  // Determine new dimensions for clamped based on bounds' dimensions
-  if (bounds.x / bounds.y > source_size_ratio) {
-    // If bounds is wider than the ratio as source, adjust by height
-    clamped.y = bounds.y;
-    clamped.x = clamped.y * source_size_ratio;
-  } else {
-    // If bounds is taller than or has the same ratio as height, adjust by width
-    clamped.x = bounds.x;
-    clamped.y = clamped.x / source_size_ratio;
-  }
-
-  return clamped;
-}
-
-ImVec2 scaleImages(const ImVec2 &source, const ImVec2 &bounds) {
   // Calculate scaling factors for both images
   float width_scale = bounds.x / source.x;
   float height_scale = bounds.y / source.y;
@@ -73,12 +50,8 @@ ImVec2 scaleImages(const ImVec2 &source, const ImVec2 &bounds) {
   return ImVec2(scale * source.x, scale * source.y);
 }
 
-// Display the images in either a horizontal or vertical layout.
-// layout depends on the 
-// void displayTiledImages()
-
 // Display the images, for now layout where input above output
-void experimentalImageDisplayer(
+void displayTiledZoomableImages(
     const ImGuiViewport *viewport, SDL_Renderer *renderer,
     SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
     SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
@@ -112,14 +85,16 @@ void experimentalImageDisplayer(
       // Account for spacing, then divide horizontally to find spacing for
       // the horizontal layout
       max_images_area.x = (max_images_area.x - style.ItemSpacing.x) / 2;
-      ImVec2 display_h = scaleImages(input_image_scale, max_images_area);
+      ImVec2 display_h =
+          maximizeImVec2WithinBounds(input_image_scale, max_images_area);
       max_images_area = original_size;
 
       /* Calculate size for the vertical layout */
       // Account for spacing, then divide horizontally to find spacing for
       // the horizontal layout
       max_images_area.y = (max_images_area.y - style.ItemSpacing.y) / 2;
-      ImVec2 display_v = scaleImages(input_image_scale, max_images_area);
+      ImVec2 display_v =
+          maximizeImVec2WithinBounds(input_image_scale, max_images_area);
       max_images_area = original_size;
 
       // Find the maximum area either image can occupy
@@ -389,7 +364,8 @@ int main(int, char **) {
 
     render(renderer);
   }
-  /* === END OF MAIN LOOP =================================================== */
+  /* === END OF MAIN LOOP ===================================================
+   */
 
   // Cleanup
   ImGui_ImplSDLRenderer2_Shutdown();
@@ -537,7 +513,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
                      minDimension * 0.25, "Size of preview: %.0f", 0);
 
     // TODO: Implement fully
-    experimentalImageDisplayer(viewport, renderer, inputSurface, inputTexture,
+    displayTiledZoomableImages(viewport, renderer, inputSurface, inputTexture,
                                outputSurface, outputTexture, minDimension,
                                previewNum, previewSize);
   }
