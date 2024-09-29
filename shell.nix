@@ -7,6 +7,8 @@ pkgs.mkShell
     SDL2
     SDL2_ttf
     SDL2_image
+    # bear is here to work with clangd. Run bear -- make for makefiles
+    bear
   ];
 
   shellHook = ''

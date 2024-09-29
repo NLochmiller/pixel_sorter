@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -45,26 +46,23 @@ typedef struct {
   char *tooltip; // The tooltip that is displayed over the item when hovered
 } QuantizerOptionItem;
 
-
-class QO{
+class QO {
 public:
-  QO(ColorConverter* f, std::string name, std::string tip) {
-    this->function = f;
+  QO(ColorConverter *function, std::string name, std::string tooltip) {
+    this->function = function;
     this->name = name;
-    this->tooltip = tip;
+    this->tooltip = tooltip;
   }
   ColorConverter *function; // ColorConverter function this repersents
+  // Use char* instead of std::string as that is what DearImGui uses
+  // This removes a step every frame
   std::string name;    // The name of this option (what is shown in the list)
   std::string tooltip; // The tooltip that is displayed over the item
 };
 
-
-
 // The options that are
-const QO quantizer_options[] = {
-  QO(&(ColorConversion::red), "t", "t"),
-  QO(&ColorConversion::green, "Green", "gtest")
-};
+const QO quantizer_options[] = {QO(&(ColorConversion::red), "Red", "t"),
+                                QO(&ColorConversion::green, "Green", "gtest")};
 
 // Scale source such that it takes up the most space it can within bounds.
 ImVec2 maximizeImVec2WithinBounds(const ImVec2 &source, const ImVec2 &bounds) {
@@ -82,11 +80,13 @@ ImVec2 maximizeImVec2WithinBounds(const ImVec2 &source, const ImVec2 &bounds) {
 }
 
 // Display the images, for now layout where input above output
-void displayTiledZoomableImages(
-    const ImGuiViewport *viewport, SDL_Renderer *renderer,
-    SDL_Surface *&inputSurface, SDL_Texture *&inputTexture,
-    SDL_Surface *&outputSurface, SDL_Texture *&outputTexture,
-    float &minDimension, float &previewNum, float &previewSize) {
+void displayTiledZoomableImages(const ImGuiViewport *viewport,
+                                SDL_Renderer *renderer,
+                                SDL_Surface *&inputSurface,
+                                SDL_Texture *&inputTexture,
+                                SDL_Surface *&outputSurface,
+                                SDL_Texture *&outputTexture, float minDimension,
+                                float magnifier_pixels, float magnifier_size) {
 
   static ImVec2 childSize = ImVec2(0, 0);
   ImGuiChildFlags childFlags = 0;
@@ -108,21 +108,15 @@ void displayTiledZoomableImages(
     if (inputTexture != NULL) {
       // We have an image, display it
       ImVec2 input_image_scale = ImVec2(inputSurface->w, inputSurface->h);
-      // display = clampImVec2ToBounds(input_image_scale, max_image_scale);
-      // Store the original area of max_images_area to restore later
-      ImVec2 original_size = max_images_area;
+      ImVec2 original_size = max_images_area; // To restore later
 
       /* Calculate size for the horizontal layout */
-      // Account for spacing, then divide horizontally to find spacing for
-      // the horizontal layout
       max_images_area.x = (max_images_area.x - style.ItemSpacing.x) / 2;
       ImVec2 display_h =
           maximizeImVec2WithinBounds(input_image_scale, max_images_area);
       max_images_area = original_size;
 
       /* Calculate size for the vertical layout */
-      // Account for spacing, then divide horizontally to find spacing for
-      // the horizontal layout
       max_images_area.y = (max_images_area.y - style.ItemSpacing.y) / 2;
       ImVec2 display_v =
           maximizeImVec2WithinBounds(input_image_scale, max_images_area);
@@ -141,8 +135,8 @@ void displayTiledZoomableImages(
     /* Display images */
     if (inputSurface != NULL) {
       displayTextureZoomable(renderer, inputTexture, inputSurface->w,
-                             inputSurface->h, display.x, display.y, previewNum,
-                             previewSize);
+                             inputSurface->h, display.x, display.y,
+                             magnifier_pixels, magnifier_size);
     }
 
     // Display vertical aspect images on the same line
@@ -153,8 +147,8 @@ void displayTiledZoomableImages(
     // Display output image zoomed in to percent
     if (outputTexture != NULL) {
       displayTextureZoomable(renderer, outputTexture, outputSurface->w,
-                             outputSurface->h, display.x, display.y, previewNum,
-                             previewSize);
+                             outputSurface->h, display.x, display.y,
+                             magnifier_pixels, magnifier_size);
     }
   }
   ImGui::EndChild();
@@ -476,32 +470,29 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
             std::make_pair(&ColorConversion::saturation_HSL,
                            (char *)"Saturation (HSL)"),
             std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
-        static const int convertersCount = arrayLen(quantizer_options);
-        static int selected_converter_index = 0; // TODO: Use lightness as default
+        static const int quantizers_count = arrayLen(quantizer_options);
+        static int selected_index = 0; // TODO: Use lightness as default
         // Pass in the preview value visible before opening the combo (it
         // could technically be different contents or not pulled from items[])
-        const char *combo_preview_value =
-            converterOptions[selected_converter_index].second;
+        const char *preview_value =
+            quantizer_options[selected_index].name.c_str();
+        // TODO REMOVE converterOptions[selected_converter_index].second;
+
         static ImGuiComboFlags flags = 0;
-        // Display each item in combo
-        if (ImGui::BeginCombo("##PixelQuantizer", combo_preview_value, flags)) {
-          for (int n = 0; n < convertersCount; n++) {
-            const bool is_selected = (selected_converter_index == n);
-            if (ImGui::Selectable(converterOptions[n].second, is_selected))
-              selected_converter_index = n;
-
-            // Set the initial focus when opening the combo (scrolling +
-            // keyboard navigation focus)
-            if (is_selected)
+        if (ImGui::BeginCombo("##PixelQuantizer", preview_value, flags)) {
+          /* Display each item in combo */
+          for (int n = 0; n < quantizers_count; n++) {
+            const bool is_selected = (selected_index == n);
+            if (ImGui::Selectable(quantizer_options[n].name.c_str(),
+                                  is_selected))
+              selected_index = n; // Update selected
+            if (is_selected) // Set the initial focus when opening the combo
               ImGui::SetItemDefaultFocus();
-
-            // Show tooltip for each item
-            // TODO: Replace with something better.
-            ImGui::SetItemTooltip("Test tool tip %d", n);
+            ImGui::SetItemTooltip("%s", quantizer_options[n].tooltip.c_str());
           }
           ImGui::EndCombo();
         }
-        *converter = converterOptions[selected_converter_index].first; // update
+        *converter = converterOptions[selected_index].first; // update
       }
 
       const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
@@ -575,27 +566,62 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::EndDisabled();
     }
 
-    /* Magnifier */
-    ImGui::SeparatorText("Magnifier");
-    // Zoom slider
-    static float minDimension = 100;
-    static float previewNum = std::min(8.0f, minDimension);
-    // Slider for controlling the number of pixels in preview
-    // Range from [1, min(width, height)] allowing full image previews
-    ImGui::DragFloat("Pixels in section", &previewNum, 1.0f, 1.0f, minDimension,
-                     "Pixels in section: %.0f", 0);
-    previewNum = std::clamp(previewNum, 1.0f, minDimension);
+    /* Magnifier Setting Header */
+    ImGui::SeparatorText("Magnifier Settings");
+    ImGui::SetItemTooltip(
+        "The magnifier will show a zoomed in section of the "
+        "image the cursor is hovering on centered at the cursor.");
 
-    // Slider for controlling the size of the preview
-    // Set the standard preview window size to 1/5 the min dimension of window
-    static float previewSize =
-        std::min(viewport->WorkSize.x, viewport->WorkSize.y) * 0.2;
-    ImGui::DragFloat("Size of preview", &previewSize, 1.0f, 1.0f,
-                     minDimension * 0.25, "Size of preview: %.0f", 0);
+    static int minDimension = 100;
+    static int magnifier_pixels = 8;
+    static int magnifier_preview_size =
+        round((std::min(viewport->WorkSize.x, viewport->WorkSize.y) * 0.2));
+    /*
+     * Ideally the layout will be in 1 line, like this:
+     * Number of pixels: [=====|===]     Magnified size: [====|===]
+     */
+    ImGui::BeginDisabled(inputSurface == NULL);
+    {
+      /* Number of pixels in the magnifier preview */
+      ImGui::Text("Number of pixels:");
+      ImGui::SameLine();
+      if (inputSurface != NULL) {
+        minDimension = std::min((int)(inputSurface->w), (int)(inputSurface->h));
+      }
+      // Range from [1, min(width, height)] allowing full image previews
+      ImGui::SliderInt("##MagnifierPixels", &magnifier_pixels, 1.0,
+                       minDimension, "%d",  ImGuiSliderFlags_Logarithmic);
 
+      ImGui::SameLine();
+
+      /* popup size  */
+      ImGui::SameLine();
+      ImGui::Text("Magnified size:");
+      ImGui::SameLine();
+      ImGui::SliderInt("Size of preview", &magnifier_preview_size, 1.0f,
+                       std::min(viewport->WorkSize.x, viewport->WorkSize.y),
+                       "Size of preview: %.0f",  ImGuiSliderFlags_Logarithmic);
+    }
+    ImGui::EndDisabled();
+
+    /* Image display */
+    ImGui::SeparatorText("Source and sorted images");
+    ImGui::SetItemTooltip(
+        // Arbitrary line length of 50 chars, bar is at 50 |
+        "The source and sorted image are displayed in either\n"
+        "a horizontal or vertical format. The format chosen\n"
+        "will maximize the space both images can take up\n"
+        "in the window.\n\n"
+        "If the layout is horizontal:\n"
+        "    The original image is on the left\n"
+        "    The sorted image is on the right\n\n"
+        "If the layout is vertical:\n"
+        "    The original image is on the top\n"
+        "    The sorted image is on the bottom\n");
     displayTiledZoomableImages(viewport, renderer, inputSurface, inputTexture,
-                               outputSurface, outputTexture, minDimension,
-                               previewNum, previewSize);
+                               outputSurface, outputTexture,
+                               (float)minDimension, (float)magnifier_pixels,
+                               (float)magnifier_preview_size);
   }
   ImGui::End();
 
