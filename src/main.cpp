@@ -1,4 +1,5 @@
 /*
+ * DOING: Converting colorconverter options to QuantizerOptionItems
  * TODO: Add tooltip to range percentage sliders
  * TODO: Add tooltip to angle knob and slider
  * TODO: Increase size of sort button
@@ -65,23 +66,52 @@ public:
 static std::pair<ColorConverter *, char *> converterOptions[] = {
     std::make_pair(&(ColorConversion::red), (char *)"Red"),
     std::make_pair(&ColorConversion::green, (char *)"Green"),
-    std::make_pair(&ColorConversion::blue, (char *)"Blue"),
-    std::make_pair(&ColorConversion::average, (char *)"Average"),
-    std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
-    std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
-    std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
-    std::make_pair(&ColorConversion::hue, (char *)"Hue"),
-    std::make_pair(&ColorConversion::saturation, (char *)"Saturation (HSV)"),
-    std::make_pair(&ColorConversion::value, (char *)"Value"),
-    std::make_pair(&ColorConversion::saturation_HSL,
-                   (char *)"Saturation (HSL)"),
-    std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
 */
 
 // The options that repersent the pixel quantizers. TODO: add tooltips
 const QuantizerOptionItem quantizer_options[] = {
-    QuantizerOptionItem(&(ColorConversion::red), "Red", ""),
-    QuantizerOptionItem(&ColorConversion::green, "Green", "")};
+    /*
+     * Organized by color spaces in this order:
+     * - RGB
+     * - HSV
+     * - HSL
+     * - Misc.
+     */
+    QuantizerOptionItem(&ColorConversion::red, "Red",
+                        "The R in RGB of the pixel"),
+    QuantizerOptionItem(&ColorConversion::green, "Green",
+                        "The G in RGB of the pixel"),
+    QuantizerOptionItem(&ColorConversion::blue, "Blue",
+                        "The B in RGB of the pixel"),
+    QuantizerOptionItem(&ColorConversion::hue, "Hue",
+                        "The color shade of a pixel.\nThe H in HSV and HSL"),
+    QuantizerOptionItem(
+        &ColorConversion::saturation, "Saturation (HSV)",
+        "How far from pure black a color appears to be.\nCalculated with the "
+        "HSV color space, it is subtly different from the HSL Saturation.\nThe "
+        "S in HSV"),
+    QuantizerOptionItem(
+        &ColorConversion::value, "Value",
+        "The maximum of the RGB values of the pixel.\nThe V in HSV."),
+    QuantizerOptionItem(
+        &ColorConversion::saturation_HSL, "Saturation (HSL)",
+        "How far from pure black a color appears to be.\nCalculated with the "
+        "HSL color space, it is subtly different from the HSV Saturation.\n"
+        "The S in HSL."),
+    QuantizerOptionItem(&ColorConversion::lightness, "Lightness",
+                        "How pale a color appears to be.\nThe L in HSL."),
+    QuantizerOptionItem(&ColorConversion::average, "Average",
+                        "The average of the RGB values of the pixel"),
+    QuantizerOptionItem(&ColorConversion::minimum, "Minimum",
+                        "The smallest of the RGB values of the pixel"),
+    QuantizerOptionItem(&ColorConversion::maximum, "Maximum",
+                        "The largest of the RGB values of the pixel"),
+    QuantizerOptionItem(&ColorConversion::chroma, "Chroma",
+                        "The difference between the maximum and minimum values "
+                        "of the RGB values of the pixel.\n Effectivly: how "
+                        "different a color is from the nearest gray")
+
+};
 
 // Scale source such that it takes up the most space it can within bounds.
 ImVec2 maximizeImVec2WithinBounds(const ImVec2 &source, const ImVec2 &bounds) {
@@ -474,12 +504,10 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       /* Pixel quantizer selection */
       {
         static const int quantizers_count = arrayLen(quantizer_options);
-        static int selected_index = 0; // TODO: Use lightness as default
-        // Pass in the preview value visible before opening the combo (it
-        // could technically be different contents or not pulled from items[])
+        static int selected_index = 7; // TODO: Use lightness as default
+        // Pass in the preview value visible before opening the combo
         const char *preview_value =
             quantizer_options[selected_index].name.c_str();
-        // TODO REMOVE converterOptions[selected_converter_index].second;
 
         static ImGuiComboFlags flags = 0;
         if (ImGui::BeginCombo("##PixelQuantizer", preview_value, flags)) {
@@ -497,13 +525,16 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         }
         *converter = quantizer_options[selected_index].function; // update
       }
+      ImGui::SetItemTooltip(
+          "The value that each pixel in the image will be converted to and "
+          "then sorted by.\nDefault is lightness");
 
-      const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
+          const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
 
       // Set the minimum and maximum percentages of values will be sorted
-      ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
-                             0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
-                             sliderFlags);
+      ImGui::DragFloatRange2("##Percentage range", &percentMin, &percentMax,
+                             1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
+                             "Maximum: %.2f%%", sliderFlags);
 
       /* === End of left half =============================================== */
       ImGui::TableSetColumnIndex(column_id++);
