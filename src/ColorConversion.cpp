@@ -2,8 +2,6 @@
 #include <algorithm>
 #include <cmath>
 
-
-
 // Get the max of RGB
 double maxRGB(double r, double g, double b) {
   return std::max(r, std::max(g, b));
@@ -52,12 +50,8 @@ double ColorConversion::minimum(double r, double g, double b) {
 
 // The range aka chroma
 double ColorConversion::chroma(double r, double g, double b) {
-  // Calculate chroma
-  double max = maxRGB(r, g, b);
-  double min = minRGB(r, g, b);
-  double chroma = max - min;
-
-  return chroma;
+  // Calculate chroma, which is max - min
+  return maxRGB(r, g, b) - minRGB(r, g, b);
 }
 
 double ColorConversion::lightness(double r, double g, double b) {
@@ -65,7 +59,6 @@ double ColorConversion::lightness(double r, double g, double b) {
   double max = maxRGB(r, g, b);
   double min = minRGB(r, g, b);
   double lightness = (max + min) / 2.0;
-
   return lightness;
 }
 
@@ -92,39 +85,35 @@ double ColorConversion::hue(double r, double g, double b) {
 }
 
 // Saturation (HSV)
-// TODO: BUGGGY FIX
 double ColorConversion::saturation(double r, double g, double b) {
   // Calculate value (called max) and chroma
-  double max = maxRGB(r, g, b);
-  double min = minRGB(r, g, b);
-  double chroma = max - min;
+  double value = ColorConversion::value(r, g, b);
+  double chroma = ColorConversion::chroma(r, g, b);
 
   // Calculate saturation
   double saturation = 0;
   // If V = 0
-  if (max == 0) {
+  if (value == 0) {
     saturation = 0;
   } else {
-    saturation = chroma / max;
+    saturation = chroma / value;
   }
 
   return saturation;
 }
 
-// HSL saturation
-// TODO: BUGGY FIX SEE 20x20 gradient on 90d all values, bad in bottom right
+// Saturation (HSL)
 double ColorConversion::saturation_HSL(double r, double g, double b) {
   // Calculate Lightness
-  double max = maxRGB(r, g, b);
-  double min = minRGB(r, g, b);
-  double lightness = (max + min) / 2;
+  double value = maxRGB(r, g, b);
+  double lightness = ColorConversion::lightness(r, g, b);
 
   double saturation = 0;
   if (lightness == 0 || lightness == 1) {
     saturation = 0;
   } else {
     // S = (V-L) / min(L, 1-L)
-    saturation = (max - lightness) / std::min(lightness, 1 - lightness);
+    saturation = (value - lightness) / std::min(lightness, 1 - lightness);
   }
 
   return saturation;
