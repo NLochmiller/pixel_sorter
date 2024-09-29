@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <stdio.h>
+#include <string>
 
 #include "Knob.hpp"
 #include "SDL_pixels.h"
@@ -36,6 +37,34 @@ using LineCollision::pointQueue;
 
 // Definition of constants
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
+
+// Used for the data model
+typedef struct {
+  ColorConverter *function; // ColorConverter function this repersents
+  char *name;    // The name of this option (what is displayed in the list)
+  char *tooltip; // The tooltip that is displayed over the item when hovered
+} QuantizerOptionItem;
+
+
+class QO{
+public:
+  QO(ColorConverter* f, std::string name, std::string tip) {
+    this->function = f;
+    this->name = name;
+    this->tooltip = tip;
+  }
+  ColorConverter *function; // ColorConverter function this repersents
+  std::string name;    // The name of this option (what is shown in the list)
+  std::string tooltip; // The tooltip that is displayed over the item
+};
+
+
+
+// The options that are
+const QO quantizer_options[] = {
+  QO(&(ColorConversion::red), "t", "t"),
+  QO(&ColorConversion::green, "Green", "gtest")
+};
 
 // Scale source such that it takes up the most space it can within bounds.
 ImVec2 maximizeImVec2WithinBounds(const ImVec2 &source, const ImVec2 &bounds) {
@@ -287,8 +316,7 @@ int main(int, char **) {
   ColorConverter *converter = &(ColorConversion::average);
 
   bool done = false;
-  /* === START OF MAIN LOOP =================================================
-   */
+  /* === START OF MAIN LOOP ================================================= */
   while (!done) {
     // Poll and handle events (inputs, window resize, etc.)
     SDL_Event event;
@@ -414,13 +442,15 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
   ImGui::SetNextWindowSize(viewport->WorkSize);
 
   if (ImGui::Begin("Main window", NULL, windowFlags)) {
+    ImGui::SeparatorText("Sorting settings");
     // Values used throughout this menu
     static float angle = 0;
     static float percentMin = 25.0;
     static float percentMax = 75.0;
 
     /* === Top options, sorting. ============================================ */
-    static ImGuiTableFlags table_flags = ImGuiTableFlags_SizingStretchSame;
+    static ImGuiTableFlags table_flags =
+        ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_BordersInnerV;
     if (ImGui::BeginTable("Sort options menu", 2, table_flags)) {
       int column_id = 0;
       ImGui::TableNextRow();
@@ -428,10 +458,9 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       ImGui::Text("Sort by");
       ImGui::SameLine();
-
-      // Color Conversion selection
-      // The pairs that make up the selection options
+      /* Pixel quantizer selection */
       {
+        // The pairs that make up the selection options
         static std::pair<ColorConverter *, char *> converterOptions[] = {
             std::make_pair(&(ColorConversion::red), (char *)"Red"),
             std::make_pair(&ColorConversion::green, (char *)"Green"),
@@ -447,8 +476,8 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
             std::make_pair(&ColorConversion::saturation_HSL,
                            (char *)"Saturation (HSL)"),
             std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
-        static const int convertersCount = arrayLen(converterOptions);
-        static int selected_converter_index = 11; // Use lightness as default
+        static const int convertersCount = arrayLen(quantizer_options);
+        static int selected_converter_index = 0; // TODO: Use lightness as default
         // Pass in the preview value visible before opening the combo (it
         // could technically be different contents or not pulled from items[])
         const char *combo_preview_value =
@@ -465,6 +494,10 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
             // keyboard navigation focus)
             if (is_selected)
               ImGui::SetItemDefaultFocus();
+
+            // Show tooltip for each item
+            // TODO: Replace with something better.
+            ImGui::SetItemTooltip("Test tool tip %d", n);
           }
           ImGui::EndCombo();
         }
@@ -482,10 +515,18 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::TableSetColumnIndex(column_id++);
       /* === Right half. Get angle user wants to sort at ==================== */
 
+      ImGui::Text("Angle");
+
       const static float low_rd = 0.0f;     // low value for radians & degrees
       const static float high_d = 360;      // High value for degrees
       const static float high_r = 2 * M_PI; // High value for radians
-      float knob_radius = 50.0f;
+
+      // Scale the knob cicumference to 1/knob_scale of the
+      // smallest dimension of window
+      static float knob_scale = 10.0f;
+
+      float knob_radius = std::min(viewport->WorkSize.x, viewport->WorkSize.y) /
+                          (2 * knob_scale);
       float knob_angle = DEG_TO_RAD(angle);
       if (ImGui::Knob("##Sort angle knob", &knob_angle, knob_radius)) {
         // Knob has caused a change, update the angle
@@ -503,8 +544,8 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         angle = (360 - displayAngle);
         std::clamp(angle, low_rd, high_d);
       }
-      /* === End of angle options =========================================== */
     }
+    /* === End of angle options ============================================= */
     ImGui::EndTable();
     /* === End of top options =============================================== */
 
@@ -534,6 +575,8 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::EndDisabled();
     }
 
+    /* Magnifier */
+    ImGui::SeparatorText("Magnifier");
     // Zoom slider
     static float minDimension = 100;
     static float previewNum = std::min(8.0f, minDimension);
