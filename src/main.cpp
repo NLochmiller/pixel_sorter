@@ -1,3 +1,9 @@
+/*
+ * TODO: Add tooltip to range percentage sliders
+ * TODO: Add tooltip to angle knob and slider
+ * TODO: Increase size of sort button
+ */
+
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -18,7 +24,6 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include <SDL.h>
 #include <SDL_image.h>
-#include <utility>
 
 #include "imfilebrowser.h"
 
@@ -39,16 +44,11 @@ using LineCollision::pointQueue;
 // Definition of constants
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
 
-// Used for the data model
-typedef struct {
-  ColorConverter *function; // ColorConverter function this repersents
-  char *name;    // The name of this option (what is displayed in the list)
-  char *tooltip; // The tooltip that is displayed over the item when hovered
-} QuantizerOptionItem;
-
-class QO {
+// Simple class, would be a struct, but constructors are nice
+class QuantizerOptionItem {
 public:
-  QO(ColorConverter *function, std::string name, std::string tooltip) {
+  QuantizerOptionItem(ColorConverter *function, std::string name,
+                      std::string tooltip) {
     this->function = function;
     this->name = name;
     this->tooltip = tooltip;
@@ -60,9 +60,28 @@ public:
   std::string tooltip; // The tooltip that is displayed over the item
 };
 
-// The options that are
-const QO quantizer_options[] = {QO(&(ColorConversion::red), "Red", "t"),
-                                QO(&ColorConversion::green, "Green", "gtest")};
+/* TODO: Convert to quantizer_options
+// The pairs that make up the selection options
+static std::pair<ColorConverter *, char *> converterOptions[] = {
+    std::make_pair(&(ColorConversion::red), (char *)"Red"),
+    std::make_pair(&ColorConversion::green, (char *)"Green"),
+    std::make_pair(&ColorConversion::blue, (char *)"Blue"),
+    std::make_pair(&ColorConversion::average, (char *)"Average"),
+    std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
+    std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
+    std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
+    std::make_pair(&ColorConversion::hue, (char *)"Hue"),
+    std::make_pair(&ColorConversion::saturation, (char *)"Saturation (HSV)"),
+    std::make_pair(&ColorConversion::value, (char *)"Value"),
+    std::make_pair(&ColorConversion::saturation_HSL,
+                   (char *)"Saturation (HSL)"),
+    std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
+*/
+
+// The options that repersent the pixel quantizers. TODO: add tooltips
+const QuantizerOptionItem quantizer_options[] = {
+    QuantizerOptionItem(&(ColorConversion::red), "Red", ""),
+    QuantizerOptionItem(&ColorConversion::green, "Green", "")};
 
 // Scale source such that it takes up the most space it can within bounds.
 ImVec2 maximizeImVec2WithinBounds(const ImVec2 &source, const ImVec2 &bounds) {
@@ -454,22 +473,6 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       ImGui::SameLine();
       /* Pixel quantizer selection */
       {
-        // The pairs that make up the selection options
-        static std::pair<ColorConverter *, char *> converterOptions[] = {
-            std::make_pair(&(ColorConversion::red), (char *)"Red"),
-            std::make_pair(&ColorConversion::green, (char *)"Green"),
-            std::make_pair(&ColorConversion::blue, (char *)"Blue"),
-            std::make_pair(&ColorConversion::average, (char *)"Average"),
-            std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
-            std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
-            std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
-            std::make_pair(&ColorConversion::hue, (char *)"Hue"),
-            std::make_pair(&ColorConversion::saturation,
-                           (char *)"Saturation (HSV)"),
-            std::make_pair(&ColorConversion::value, (char *)"Value"),
-            std::make_pair(&ColorConversion::saturation_HSL,
-                           (char *)"Saturation (HSL)"),
-            std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
         static const int quantizers_count = arrayLen(quantizer_options);
         static int selected_index = 0; // TODO: Use lightness as default
         // Pass in the preview value visible before opening the combo (it
@@ -492,7 +495,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
           }
           ImGui::EndCombo();
         }
-        *converter = converterOptions[selected_index].first; // update
+        *converter = quantizer_options[selected_index].function; // update
       }
 
       const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
@@ -574,33 +577,43 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
     static int minDimension = 100;
     static int magnifier_pixels = 8;
+    // How much of the min dimension the preview size can take up
+    const static float magnifier_preview_max_scale = 0.2;
     static int magnifier_preview_size =
-        round((std::min(viewport->WorkSize.x, viewport->WorkSize.y) * 0.2));
+        round((std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
+               magnifier_preview_max_scale));
     /*
      * Ideally the layout will be in 1 line, like this:
      * Number of pixels: [=====|===]     Magnified size: [====|===]
      */
     ImGui::BeginDisabled(inputSurface == NULL);
     {
-      /* Number of pixels in the magnifier preview */
-      ImGui::Text("Number of pixels:");
-      ImGui::SameLine();
-      if (inputSurface != NULL) {
-        minDimension = std::min((int)(inputSurface->w), (int)(inputSurface->h));
+
+      if (ImGui::BeginTable("##MagnifierSettingsTable", 2)) {
+        /* Number of pixels in the magnifier preview */
+        ImGui::TableNextColumn();
+        if (inputSurface != NULL) {
+          minDimension =
+              std::min((int)(inputSurface->w), (int)(inputSurface->h));
+        }
+        // Range from [1, min(width, height)] allowing full image previews
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderInt("##MagnifierPixels", &magnifier_pixels, 1,
+                         minDimension, "Pixels: %d",
+                         ImGuiSliderFlags_Logarithmic);
+        // TODO: Add a tooltip MUST mention ctrl click for input
+
+        /* popup size TODO: Find a good name for this */
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderInt(
+            "##MagnifierPreviewSize", &magnifier_preview_size, 1,
+            round(std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
+                  magnifier_preview_max_scale),
+            "Size: %d");
+        // TODO: Add a tooltip MUST mention ctrl click for input
+        ImGui::EndTable();
       }
-      // Range from [1, min(width, height)] allowing full image previews
-      ImGui::SliderInt("##MagnifierPixels", &magnifier_pixels, 1.0,
-                       minDimension, "%d",  ImGuiSliderFlags_Logarithmic);
-
-      ImGui::SameLine();
-
-      /* popup size  */
-      ImGui::SameLine();
-      ImGui::Text("Magnified size:");
-      ImGui::SameLine();
-      ImGui::SliderInt("Size of preview", &magnifier_preview_size, 1.0f,
-                       std::min(viewport->WorkSize.x, viewport->WorkSize.y),
-                       "Size of preview: %.0f",  ImGuiSliderFlags_Logarithmic);
     }
     ImGui::EndDisabled();
 
