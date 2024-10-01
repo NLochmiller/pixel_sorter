@@ -1,25 +1,55 @@
-# The input and outputs filenames
-IN_FILE = pixel_sorter.c
-OUT_FILE = pixel_sorter
+CXX_VERSION=17
+OUTPUT = pixel_sorter
 
-# The compiler
-CC = gcc
-# Compiler flags
-CFLAGS := -g -Wall
-# Needed for linking libraries, such as -lm for math.h for c
-LINKS :=  `sdl2-config --libs --cflags` -lSDL2_image -lm
+SRC_DIR = ./src
+LIBS_DIR = ./libs
+IMGUI_DIR = $(LIBS_DIR)/imgui
 
-# The .c files we want to use (HELPER FUNCTIONS)
-CFILES := color_conversion.c surface_sorting.c 
-HFILES := constants.h color_conversion.h surface_sorting.h 
 
-# cc flags output input *.h *.c links
-$(OUT_FILE): $(IN_FILE) $(CFILES) $(HFILES)
-	$(CC) $(CFLAGS) $(IN_FILE) -o $(OUT_FILE) $(HFILES) $(CFILES) $(LINKS)
+# Normal sources
+SOURCES := $(wildcard $(SRC_DIR)/*.cpp)
 
-run: $(OUT_FILE)
-	./$(OUT_FILE)
-	open ./output.png
+# Add the imgui files
+SOURCES += $(wildcard $(IMGUI_DIR)/*.cpp)
+
+# Add the imgui backend files for SDL2
+SOURCES += $(IMGUI_DIR)/backends/imgui_impl_sdl2.cpp \
+	$(IMGUI_DIR)/backends/imgui_impl_sdlrenderer2.cpp
+
+OBJS = $(addsuffix .o, $(basename $(notdir $(SOURCES))))
+
+CXX = g++
+CXXFLAGS = -std=c++$(CXX_VERSION) -I $(IMGUI_DIR) -I $(IMGUI_DIR)/backends     \
+	-I $(LIBS_DIR)/file_browser -I $(SRC_DIR)
+CXXFLAGS += -g -Wall -Wformat
+CXXFLAGS += `sdl2-config --cflags --libs`
+
+LIBS = -lGL -ldl -lSDL2_image `sdl2-config --libs`
+
+##---------------------------------------------------------------------
+## BUILD RULES
+##---------------------------------------------------------------------
+
+all: $(OUTPUT)
+	@echo Build complete
+
+%.o:%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o:$(SRC_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o:$(IMGUI_DIR)/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o:$(IMGUI_DIR)/backends/%.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+$(OUTPUT): $(OBJS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) $(LIBS)
+
+run: $(OUTPUT)
+	./$(OUTPUT)
 
 clean:
-	rm -f $(OUT_FILE) *.o *.out output.png
+	rm -f $(OUTPUT) $(OBJS) *.o
