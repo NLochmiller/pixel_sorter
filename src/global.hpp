@@ -15,8 +15,13 @@ extern const uint32_t DEFAULT_PIXEL_FORMAT; //
 // Macro to convert from a 2d coordinates system to 1d
 #define TWOD_TO_1D(_x_, _y_, _w_) _x_ + (_y_ * _w_)
 
-//
-template< class Type, std::ptrdiff_t  n >
-std::ptrdiff_t arrayLen( Type (&)[n] ) { return n; }
+// Returns the length of an array
+template <class Type, std::ptrdiff_t n> std::ptrdiff_t arrayLen(Type (&)[n]) {
+  return n;
+}
+
+// Convert degrees to radians
+#define DEG_TO_RAD(_a_) _a_ * M_PI / 180;
+#define RAD_TO_DEG(_a_) _a_ * 180 / M_PI;
 
 #endif // GLOBAL_HPP_

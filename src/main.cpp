@@ -1,19 +1,30 @@
+/*
+ * DOING: Converting colorconverter options to QuantizerOptionItems
+ * TODO: Add tooltip to range percentage sliders
+ * TODO: Add tooltip to angle knob and slider
+ * TODO: Increase size of sort button
+ */
+
+#include <algorithm>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <optional>
 #include <stdio.h>
+#include <string>
 
+#include "Knob.hpp"
 #include "SDL_pixels.h"
 #include "SDL_render.h"
 #include "SDL_surface.h"
 
+// Enable math operators for imgui
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
 #include <SDL.h>
 #include <SDL_image.h>
-#include <utility>
 
 #include "imfilebrowser.h"
 
@@ -33,6 +44,164 @@ using LineCollision::pointQueue;
 
 // Definition of constants
 const uint32_t DEFAULT_PIXEL_FORMAT = SDL_PIXELFORMAT_ABGR8888;
+
+// Simple class, would be a struct, but constructors are nice
+class QuantizerOptionItem {
+public:
+  QuantizerOptionItem(ColorConverter *function, std::string name,
+                      std::string tooltip) {
+    this->function = function;
+    this->name = name;
+    this->tooltip = tooltip;
+  }
+  ColorConverter *function; // ColorConverter function this repersents
+  // Use char* instead of std::string as that is what DearImGui uses
+  // This removes a step every frame
+  std::string name;    // The name of this option (what is shown in the list)
+  std::string tooltip; // The tooltip that is displayed over the item
+};
+
+/* TODO: Convert to quantizer_options
+// The pairs that make up the selection options
+static std::pair<ColorConverter *, char *> converterOptions[] = {
+    std::make_pair(&(ColorConversion::red), (char *)"Red"),
+    std::make_pair(&ColorConversion::green, (char *)"Green"),
+*/
+
+// The options that repersent the pixel quantizers. TODO: add tooltips
+const QuantizerOptionItem quantizer_options[] = {
+    /*
+     * Organized by color spaces in this order:
+     * - RGB
+     * - HSV
+     * - HSL
+     * - Misc.
+     */
+    QuantizerOptionItem(&ColorConversion::red, "Red",
+                        "The R in RGB of the pixel"),
+    QuantizerOptionItem(&ColorConversion::green, "Green",
+                        "The G in RGB of the pixel"),
+    QuantizerOptionItem(&ColorConversion::blue, "Blue",
+                        "The B in RGB of the pixel"),
+    QuantizerOptionItem(&ColorConversion::hue, "Hue",
+                        "The color shade of a pixel.\nThe H in HSV and HSL"),
+    QuantizerOptionItem(
+        &ColorConversion::saturation, "Saturation (HSV)",
+        "How far from pure black a color appears to be.\nCalculated with the "
+        "HSV color space, it is subtly different from the HSL Saturation.\nThe "
+        "S in HSV"),
+    QuantizerOptionItem(
+        &ColorConversion::value, "Value",
+        "The maximum of the RGB values of the pixel.\nThe V in HSV."),
+    QuantizerOptionItem(
+        &ColorConversion::saturation_HSL, "Saturation (HSL)",
+        "How far from pure black a color appears to be.\nCalculated with the "
+        "HSL color space, it is subtly different from the HSV Saturation.\n"
+        "The S in HSL."),
+    QuantizerOptionItem(&ColorConversion::lightness, "Lightness",
+                        "How pale a color appears to be.\nThe L in HSL."),
+    QuantizerOptionItem(&ColorConversion::average, "Average",
+                        "The average of the RGB values of the pixel"),
+    QuantizerOptionItem(&ColorConversion::minimum, "Minimum",
+                        "The smallest of the RGB values of the pixel"),
+    QuantizerOptionItem(&ColorConversion::maximum, "Maximum",
+                        "The largest of the RGB values of the pixel"),
+    QuantizerOptionItem(&ColorConversion::chroma, "Chroma",
+                        "The difference between the maximum and minimum values "
+                        "of the RGB values of the pixel.\n Effectivly: how "
+                        "different a color is from the nearest gray")
+
+};
+
+// Scale source such that it takes up the most space it can within bounds.
+ImVec2 maximizeImVec2WithinBounds(const ImVec2 &source, const ImVec2 &bounds) {
+  // Error check
+  if (source.x <= 0 || source.y <= 0) {
+    return ImVec2(0, 0);
+  }
+  // Calculate scaling factors for both images
+  float width_scale = bounds.x / source.x;
+  float height_scale = bounds.y / source.y;
+  float scale = std::min(width_scale, height_scale);
+
+  // Calculate scaled dimensions for both images (they will be the same)
+  return ImVec2(scale * source.x, scale * source.y);
+}
+
+// Display the images, for now layout where input above output
+void displayTiledZoomableImages(const ImGuiViewport *viewport,
+                                SDL_Renderer *renderer,
+                                SDL_Surface *&inputSurface,
+                                SDL_Texture *&inputTexture,
+                                SDL_Surface *&outputSurface,
+                                SDL_Texture *&outputTexture, float minDimension,
+                                float magnifier_pixels, float magnifier_size) {
+
+  static ImVec2 childSize = ImVec2(0, 0);
+  ImGuiChildFlags childFlags = 0;
+  ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoDecoration;
+
+  /* Calculate which layout to use, and display image size */
+  if (ImGui::BeginChild("Image display child", ImVec2(0, 0), childFlags,
+                        windowFlags)) {
+    childSize = ImGui::GetWindowSize();
+    ImVec2 display = ImVec2(0, 0);
+    // Calculate the maximum size that each image is allowed to take up
+    bool useHoriLayout = true; // Should we use the horizontal layout?
+    ImGuiStyle &style = ImGui::GetStyle();
+    // Maximum area that both images are in, accounting for padding
+    ImVec2 max_images_area = ImVec2(childSize.x, childSize.y);
+    max_images_area = max_images_area - style.WindowPadding;
+
+    // Display input image zoomed in to percent
+    if (inputTexture != NULL) {
+      // We have an image, display it
+      ImVec2 input_image_scale = ImVec2(inputSurface->w, inputSurface->h);
+      ImVec2 original_size = max_images_area; // To restore later
+
+      /* Calculate size for the horizontal layout */
+      max_images_area.x = (max_images_area.x - style.ItemSpacing.x) / 2;
+      ImVec2 display_h =
+          maximizeImVec2WithinBounds(input_image_scale, max_images_area);
+      max_images_area = original_size;
+
+      /* Calculate size for the vertical layout */
+      max_images_area.y = (max_images_area.y - style.ItemSpacing.y) / 2;
+      ImVec2 display_v =
+          maximizeImVec2WithinBounds(input_image_scale, max_images_area);
+      max_images_area = original_size;
+
+      // Find the maximum area either image can occupy
+      if (display_h.x >= display_v.x) {
+        useHoriLayout = true; // Use horizontal layout
+        display = display_h;
+      } else {
+        useHoriLayout = false; // Use vertical layoyt
+        display = display_v;
+      }
+    }
+
+    /* Display images */
+    if (inputSurface != NULL) {
+      displayTextureZoomable(renderer, inputTexture, inputSurface->w,
+                             inputSurface->h, display.x, display.y,
+                             magnifier_pixels, magnifier_size);
+    }
+
+    // Display vertical aspect images on the same line
+    if (useHoriLayout) {
+      ImGui::SameLine();
+    }
+
+    // Display output image zoomed in to percent
+    if (outputTexture != NULL) {
+      displayTextureZoomable(renderer, outputTexture, outputSurface->w,
+                             outputSurface->h, display.x, display.y,
+                             magnifier_pixels, magnifier_size);
+    }
+  }
+  ImGui::EndChild();
+}
 
 // Wrapper for the PixelSorter::sort function, converts surfaces to pixel
 // arrays to pass onto it, and assembles some needed information
@@ -219,7 +388,7 @@ int main(int, char **) {
     if (inputFileDialog.HasSelected()) {
       inputSurface = IMG_Load(inputFileDialog.GetSelected().c_str());
       if (inputSurface == NULL) {
-        // TODO cancel file broser exit on error
+        // TODO cancel file browser exit on error
         fprintf(stderr, "File %s does not exist\n",
                 inputFileDialog.GetSelected().c_str());
       } else {
@@ -256,6 +425,14 @@ int main(int, char **) {
       }
       outputFileDialog.ClearSelected();
     }
+    // TODO BEGIN REMOVE
+    bool debug_show_style = false;
+    if (debug_show_style) {
+      ImGui::Begin("style");
+      ImGui::ShowStyleEditor(NULL);
+      ImGui::End();
+    }
+    // TODO END REMOVE
 
     render(renderer);
   }
@@ -308,122 +485,191 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
   ImGui::SetNextWindowSize(viewport->WorkSize);
 
   if (ImGui::Begin("Main window", NULL, windowFlags)) {
-    // Main group
-    ImGui::BeginGroup();
-    {
-      // Color Conversion selection
-      {
-        // The pairs that make up the selection options
-        static std::pair<ColorConverter *, char *> converterOptions[] = {
-            std::make_pair(&(ColorConversion::red), (char *)"Red"),
-            std::make_pair(&ColorConversion::green, (char *)"Green"),
-            std::make_pair(&ColorConversion::blue, (char *)"Blue"),
-            std::make_pair(&ColorConversion::average, (char *)"Average"),
-            std::make_pair(&ColorConversion::minimum, (char *)"Minimum"),
-            std::make_pair(&ColorConversion::maximum, (char *)"Maximum"),
-            std::make_pair(&ColorConversion::chroma, (char *)"Chroma"),
-            std::make_pair(&ColorConversion::hue, (char *)"Hue"),
-            std::make_pair(&ColorConversion::saturation,
-                           (char *)"Saturation (HSV)"),
-            std::make_pair(&ColorConversion::value, (char *)"Value"),
-            std::make_pair(&ColorConversion::saturation_HSL, 
-                           (char *)"Saturation (HSL)"),
-            std::make_pair(&ColorConversion::lightness, (char *)"Lightness")};
-        static const int convertersCount = arrayLen(converterOptions);
-        static int selected_converter_index = 11; // Use lightness as default
-        // Pass in the preview value visible before opening the combo (it could
-        // technically be different contents or not pulled from items[])
-        const char *combo_preview_value =
-            converterOptions[selected_converter_index].second;
-        static ImGuiComboFlags flags = 0;
-        // Display each item in combo
-        if (ImGui::BeginCombo("Pixel Quantizer", combo_preview_value, flags)) {
-          for (int n = 0; n < convertersCount; n++) {
-            const bool is_selected = (selected_converter_index == n);
-            if (ImGui::Selectable(converterOptions[n].second, is_selected))
-              selected_converter_index = n;
+    ImGui::SeparatorText("Sorting settings");
+    // Values used throughout this menu
+    static float angle = 0;
+    static float percentMin = 25.0;
+    static float percentMax = 75.0;
 
-            // Set the initial focus when opening the combo (scrolling +
-            // keyboard navigation focus)
-            if (is_selected)
+    /* === Top options, sorting. ============================================ */
+    static ImGuiTableFlags table_flags =
+        ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_BordersInnerV;
+    if (ImGui::BeginTable("Sort options menu", 2, table_flags)) {
+      int column_id = 0;
+      ImGui::TableNextRow();
+      ImGui::TableSetColumnIndex(column_id++);
+
+      ImGui::Text("Sort by");
+      ImGui::SameLine();
+      static int selected_index = 7; // TODO: Use lightness as default
+      /* Pixel quantizer selection */
+      {
+        static const int quantizers_count = arrayLen(quantizer_options);
+
+        // Pass in the preview value visible before opening the combo
+        const char *preview_value =
+            quantizer_options[selected_index].name.c_str();
+
+        static ImGuiComboFlags flags = 0;
+        if (ImGui::BeginCombo("##PixelQuantizer", preview_value, flags)) {
+          /* Display each item in combo */
+          for (int n = 0; n < quantizers_count; n++) {
+            const bool is_selected = (selected_index == n);
+            if (ImGui::Selectable(quantizer_options[n].name.c_str(),
+                                  is_selected))
+              selected_index = n; // Update selected
+            if (is_selected) // Set the initial focus when opening the combo
               ImGui::SetItemDefaultFocus();
+            ImGui::SetItemTooltip("%s", quantizer_options[n].tooltip.c_str());
           }
           ImGui::EndCombo();
         }
-        *converter = converterOptions[selected_converter_index].first; // update
+        *converter = quantizer_options[selected_index].function; // update
       }
+      ImGui::SetItemTooltip(
+          "The value that each pixel in the image will be converted to and "
+          "then sorted by.\nDefault is lightness");
 
       const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
 
-      // Set the minimum and maximum percentages of values will be sorted
-      static float percentMin = 25.0;
-      static float percentMax = 75.0;
-      ImGui::DragFloatRange2("Percentage range", &percentMin, &percentMax, 1.0f,
-                             0.0f, 100.0f, "Minimum: %.2f%%", "Maximum: %.2f%%",
-                             sliderFlags);
-
-      static float angle = 90.0;
-      ImGui::DragFloat("Sort angle", &angle, 1.0f, 0.0f, 360.0f, "%.2f",
-                       sliderFlags);
-
-      { // Sorting button. Enabled only when there is an input surface
-        ImGui::BeginDisabled(inputSurface == NULL);
-        if (ImGui::Button("Sort")) {
-          // Angle input is human readable, account for screen 0,0 being top
-          // left
-          double flippedAngle = 360 - angle;
-          sort_wrapper(renderer, inputSurface, outputSurface, flippedAngle,
-                       percentMin, percentMax, *converter);
-          outputTexture = updateTexture(renderer, outputSurface, outputTexture);
-        }
-        ImGui::EndDisabled();
-      }
-
+      ImGui::Text("In the range ");
       ImGui::SameLine();
+      // Set the minimum and maximum percentages of values will be sorted
+      ImGui::DragFloatRange2("##Percentage range", &percentMin, &percentMax,
+                             1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
+                             "Maximum: %.2f%%", sliderFlags);
+      ImGui::SetItemTooltip("The image will be sorted by %s that is\nin the "
+                            "range %.2f to %.2f (inclusive).\nThese sliders "
+                            "control the minimum and maximum of that range",
+                            quantizer_options[selected_index].name.c_str(),
+                            percentMin, percentMax);
 
-      // Export button
-      {
-        // TODO: Find if path is empty
-        bool isExportButtonDisabled =
-            (outputSurface == NULL) /* TODO: || PATH BAD */;
-        ImGui::BeginDisabled(isExportButtonDisabled);
-        if (ImGui::Button("Export")) {
-          fprintf(stderr, "export!\n");
-          // TODO: Save to export path.
-        }
-
-        ImGui::EndDisabled();
+      /* Sorting button. Enabled only when there is an input surface */
+      ImGui::BeginDisabled(inputSurface == NULL);
+      if (ImGui::Button("Sort")) {
+        sort_wrapper(renderer, inputSurface, outputSurface, angle, percentMin,
+                     percentMax, *converter);
+        outputTexture = updateTexture(renderer, outputSurface, outputTexture);
       }
+      ImGui::EndDisabled();
 
-      // Zoom slider
-      static float imageZoom = 100.0;
-      ImGui::DragFloat("Image zoom", &imageZoom, 1.0f, 0.0f, 500.0f,
-                       "Zoom: %.2f%%", 0);
+      /* === End of left half =============================================== */
+      ImGui::TableSetColumnIndex(column_id++);
+      /* === Right half. Get angle user wants to sort at ==================== */
 
-      // Display images
-      double zoomPercent = imageZoom / 100.0f;
-      // Display input image zoomed in to percent
-      if (inputTexture != NULL) {
-        displayTexture(renderer, inputTexture, inputSurface->w * zoomPercent,
-                       inputSurface->h * zoomPercent);
+      ImGui::Text("Angle");
+
+      const static float low_rd = 0.0f;     // low value for radians & degrees
+      const static float high_d = 360;      // High value for degrees
+      const static float high_r = 2 * M_PI; // High value for radians
+      std::string tooltip = "This controls the angle of the line that the "
+                            "pixels of the image are sorted along.";
+
+      // Scale the knob cicumference to 1/knob_scale of the
+      // smallest dimension of window
+      static float knob_scale = 10.0f;
+
+      float knob_radius = std::min(viewport->WorkSize.x, viewport->WorkSize.y) /
+                          (2 * knob_scale);
+      float knob_angle = DEG_TO_RAD(angle);
+      if (ImGui::Knob("##Sort angle knob", &knob_angle, knob_radius)) {
+        // Knob has caused a change, update the angle
+        angle = RAD_TO_DEG(knob_angle);
+        std::clamp(angle, low_rd, high_r);
       }
+      ImGui::SetItemTooltip("%s", tooltip.c_str());
 
-      // Display output image zoomed in to percent
-      if (outputTexture != NULL) {
-        displayTexture(renderer, outputTexture, outputSurface->w * zoomPercent,
-                       outputSurface->h * zoomPercent);
+      ImGui::SetNextItemWidth(knob_radius * 2);
+      // Convert to human readable angle
+      float displayAngle = std::clamp((float)(360 - angle), low_rd, high_d);
+      if (ImGui::DragFloat("##Sort angle", &displayAngle, 1.0f, 0.0f, 360.0f,
+                           "%.2f", sliderFlags | ImGuiSliderFlags_WrapAround)) {
+        // There has been a change. Change the angle to repersent this
+        // change in the display angle
+        angle = (360 - displayAngle);
+        std::clamp(angle, low_rd, high_d);
       }
+      ImGui::SetItemTooltip("%s\nControl Left click to enter an angle.",
+                            tooltip.c_str());
     }
-    ImGui::EndGroup();
+    /* === End of angle options ============================================= */
+    ImGui::EndTable();
+    /* === End of top options =============================================== */
 
-    // This is how to do a vertical layout, just split into 2 groups
-    ImGui::SameLine();
-    ImGui::BeginGroup();
+    /* Magnifier Setting Header */
+    ImGui::SeparatorText("Magnifier Settings");
+    ImGui::SetItemTooltip(
+        "The magnifier will show a zoomed in section of the "
+        "image the cursor is hovering over. Centered at the cursor.");
+
+    static int minDimension = 100;
+    static int magnifier_pixels = 8;
+    // How much of the min dimension the preview size can take up
+    const static float magnifier_preview_max_scale = 0.2;
+    static int magnifier_preview_size =
+        round((std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
+               magnifier_preview_max_scale));
+    /*
+     * Ideally the layout will be in 1 line, like this:
+     * Number of pixels: [=====|===]     Magnified size: [====|===]
+     */
+    ImGui::BeginDisabled(inputSurface == NULL);
     {
-      ImGui::Text("First item on right");
-      ImGui::Text("Second item on right");
+
+      if (ImGui::BeginTable("##MagnifierSettingsTable", 2)) {
+        /* Number of pixels in the magnifier preview */
+        ImGui::TableNextColumn();
+        if (inputSurface != NULL) {
+          minDimension =
+              std::min((int)(inputSurface->w), (int)(inputSurface->h));
+        }
+        // Range from [1, min(width, height)] allowing full image previews
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderInt("##MagnifierPixels", &magnifier_pixels, 1,
+                         minDimension, "Pixels: %d",
+                         ImGuiSliderFlags_Logarithmic);
+
+        ImGui::SetItemTooltip("How many pixels of the image are displayed in a "
+                              "n by n square in the magnifier.\nControl Left "
+                              "click to enter a value.");
+
+        /* popup size TODO: Find a good name for this */
+        ImGui::TableNextColumn();
+        ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
+        ImGui::SliderInt(
+            "##MagnifierPreviewSize", &magnifier_preview_size, 1,
+            round(std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
+                  magnifier_preview_max_scale),
+            "Size: %d");
+
+        ImGui::SetItemTooltip(
+            "The size of the magnified section of the image on your "
+            "screen.\nControl Left click to enter a value.");
+
+        // TODO: Add a tooltip MUST mention ctrl click for input
+        ImGui::EndTable();
+      }
     }
-    ImGui::EndGroup();
+    ImGui::EndDisabled();
+
+    /* Image display */
+    ImGui::SeparatorText("Source and sorted images");
+    ImGui::SetItemTooltip(
+        // Arbitrary line length of 50 chars, bar is at 50 |
+        "The source and sorted image are displayed in either\n"
+        "a horizontal or vertical format. The format chosen\n"
+        "will maximize the space both images can take up\n"
+        "in the window.\n\n"
+        "If the layout is horizontal:\n"
+        "    The original image is on the left\n"
+        "    The sorted image is on the right\n\n"
+        "If the layout is vertical:\n"
+        "    The original image is on the top\n"
+        "    The sorted image is on the bottom\n");
+    displayTiledZoomableImages(viewport, renderer, inputSurface, inputTexture,
+                               outputSurface, outputTexture,
+                               (float)minDimension, (float)magnifier_pixels,
+                               (float)magnifier_preview_size);
   }
   ImGui::End();
 

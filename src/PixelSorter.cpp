@@ -1,7 +1,7 @@
 #include "PixelSorter.hpp"
 #include "ColorConversion.hpp"
 #include "SDL_pixels.h"
-#include "global.h"
+#include "global.hpp"
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
