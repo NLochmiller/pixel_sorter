@@ -1,10 +1,3 @@
-/*
- * DOING: Converting colorconverter options to QuantizerOptionItems
- * TODO: Add tooltip to range percentage sliders
- * TODO: Add tooltip to angle knob and slider
- * TODO: Increase size of sort button
- */
-
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
@@ -61,14 +54,7 @@ public:
   std::string tooltip; // The tooltip that is displayed over the item
 };
 
-/* TODO: Convert to quantizer_options
-// The pairs that make up the selection options
-static std::pair<ColorConverter *, char *> converterOptions[] = {
-    std::make_pair(&(ColorConversion::red), (char *)"Red"),
-    std::make_pair(&ColorConversion::green, (char *)"Green"),
-*/
-
-// The options that repersent the pixel quantizers. TODO: add tooltips
+// The options that repersent the pixel quantizers.
 const QuantizerOptionItem quantizer_options[] = {
     /*
      * Organized by color spaces in this order:
@@ -414,10 +400,7 @@ int main(int, char **) {
     outputFileDialog.Display();
     if (outputFileDialog.HasSelected()) {
       outputPath = outputFileDialog.GetSelected();
-      printf("Selected filename %s\n", outputPath.c_str());
-      // TODO: MOVE TO A SAVE IMAGE FUNCTION
       if (outputSurface != NULL) {
-        // TODO: Allow selection between .png and .jpg formating
         IMG_SavePNG(outputSurface, outputPath.c_str());
       } else {
         fprintf(stderr, "The output image does not exist! You must sort before "
@@ -425,19 +408,10 @@ int main(int, char **) {
       }
       outputFileDialog.ClearSelected();
     }
-    // TODO BEGIN REMOVE
-    bool debug_show_style = false;
-    if (debug_show_style) {
-      ImGui::Begin("style");
-      ImGui::ShowStyleEditor(NULL);
-      ImGui::End();
-    }
-    // TODO END REMOVE
 
     render(renderer);
   }
-  /* === END OF MAIN LOOP ===================================================
-   */
+  /* === END OF MAIN LOOP =================================================== */
 
   // Cleanup
   ImGui_ImplSDLRenderer2_Shutdown();
@@ -645,8 +619,6 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         ImGui::SetItemTooltip(
             "The size of the magnified section of the image on your "
             "screen.\nControl Left click to enter a value.");
-
-        // TODO: Add a tooltip MUST mention ctrl click for input
         ImGui::EndTable();
       }
     }
