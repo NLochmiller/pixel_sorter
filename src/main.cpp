@@ -501,10 +501,11 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       ImGui::Text("Sort by");
       ImGui::SameLine();
+      static int selected_index = 7; // TODO: Use lightness as default
       /* Pixel quantizer selection */
       {
         static const int quantizers_count = arrayLen(quantizer_options);
-        static int selected_index = 7; // TODO: Use lightness as default
+
         // Pass in the preview value visible before opening the combo
         const char *preview_value =
             quantizer_options[selected_index].name.c_str();
@@ -529,12 +530,28 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
           "The value that each pixel in the image will be converted to and "
           "then sorted by.\nDefault is lightness");
 
-          const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
+      const ImGuiSliderFlags sliderFlags = ImGuiSliderFlags_AlwaysClamp;
 
+      ImGui::Text("In the range ");
+      ImGui::SameLine();
       // Set the minimum and maximum percentages of values will be sorted
       ImGui::DragFloatRange2("##Percentage range", &percentMin, &percentMax,
                              1.0f, 0.0f, 100.0f, "Minimum: %.2f%%",
                              "Maximum: %.2f%%", sliderFlags);
+      ImGui::SetItemTooltip("The image will be sorted by %s that is\nin the "
+                            "range %.2f to %.2f (inclusive).\nThese sliders "
+                            "control the minimum and maximum of that range",
+                            quantizer_options[selected_index].name.c_str(),
+                            percentMin, percentMax);
+
+      /* Sorting button. Enabled only when there is an input surface */
+      ImGui::BeginDisabled(inputSurface == NULL);
+      if (ImGui::Button("Sort")) {
+        sort_wrapper(renderer, inputSurface, outputSurface, angle, percentMin,
+                     percentMax, *converter);
+        outputTexture = updateTexture(renderer, outputSurface, outputTexture);
+      }
+      ImGui::EndDisabled();
 
       /* === End of left half =============================================== */
       ImGui::TableSetColumnIndex(column_id++);
@@ -545,6 +562,8 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       const static float low_rd = 0.0f;     // low value for radians & degrees
       const static float high_d = 360;      // High value for degrees
       const static float high_r = 2 * M_PI; // High value for radians
+      std::string tooltip = "This controls the angle of the line that the "
+                            "pixels of the image are sorted along.";
 
       // Scale the knob cicumference to 1/knob_scale of the
       // smallest dimension of window
@@ -558,6 +577,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         angle = RAD_TO_DEG(knob_angle);
         std::clamp(angle, low_rd, high_r);
       }
+      ImGui::SetItemTooltip("%s", tooltip.c_str());
 
       ImGui::SetNextItemWidth(knob_radius * 2);
       // Convert to human readable angle
@@ -569,42 +589,18 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         angle = (360 - displayAngle);
         std::clamp(angle, low_rd, high_d);
       }
+      ImGui::SetItemTooltip("%s\nControl Left click to enter an angle.",
+                            tooltip.c_str());
     }
     /* === End of angle options ============================================= */
     ImGui::EndTable();
     /* === End of top options =============================================== */
 
-    { // Sorting button. Enabled only when there is an input surface
-      ImGui::BeginDisabled(inputSurface == NULL);
-      if (ImGui::Button("Sort")) {
-        sort_wrapper(renderer, inputSurface, outputSurface, angle, percentMin,
-                     percentMax, *converter);
-        outputTexture = updateTexture(renderer, outputSurface, outputTexture);
-      }
-      ImGui::EndDisabled();
-    }
-
-    ImGui::SameLine();
-
-    // Export button
-    {
-      // TODO: Find if path is empty
-      bool isExportButtonDisabled =
-          (outputSurface == NULL) /* TODO: || PATH BAD */;
-      ImGui::BeginDisabled(isExportButtonDisabled);
-      if (ImGui::Button("Export")) {
-        fprintf(stderr, "export!\n");
-        // TODO: Save to export path.
-      }
-
-      ImGui::EndDisabled();
-    }
-
     /* Magnifier Setting Header */
     ImGui::SeparatorText("Magnifier Settings");
     ImGui::SetItemTooltip(
         "The magnifier will show a zoomed in section of the "
-        "image the cursor is hovering on centered at the cursor.");
+        "image the cursor is hovering over. Centered at the cursor.");
 
     static int minDimension = 100;
     static int magnifier_pixels = 8;
@@ -632,7 +628,10 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         ImGui::SliderInt("##MagnifierPixels", &magnifier_pixels, 1,
                          minDimension, "Pixels: %d",
                          ImGuiSliderFlags_Logarithmic);
-        // TODO: Add a tooltip MUST mention ctrl click for input
+
+        ImGui::SetItemTooltip("How many pixels of the image are displayed in a "
+                              "n by n square in the magnifier.\nControl Left "
+                              "click to enter a value.");
 
         /* popup size TODO: Find a good name for this */
         ImGui::TableNextColumn();
@@ -642,6 +641,11 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
             round(std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
                   magnifier_preview_max_scale),
             "Size: %d");
+
+        ImGui::SetItemTooltip(
+            "The size of the magnified section of the image on your "
+            "screen.\nControl Left click to enter a value.");
+
         // TODO: Add a tooltip MUST mention ctrl click for input
         ImGui::EndTable();
       }
