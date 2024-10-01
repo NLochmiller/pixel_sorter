@@ -85,6 +85,7 @@ double ColorConversion::hue(double r, double g, double b) {
 }
 
 // Saturation (HSV)
+// TODO: BUGGGY FIX
 double ColorConversion::saturation(double r, double g, double b) {
   // Calculate value (called max) and chroma
   double value = ColorConversion::value(r, g, b);
