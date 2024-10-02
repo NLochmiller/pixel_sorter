@@ -1,5 +1,5 @@
 # Pixel Sorter
-A graphics tool that modifies images by sorting images, leading to an interesting blur like effect.
+A graphics tool that modifies images by sorting images, leading to an interesting 'glitchy' blur like effect.
 
 ![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
 
