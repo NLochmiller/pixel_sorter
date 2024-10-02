@@ -1,6 +1,8 @@
 # Pixel Sorter
 A computer generated graphics tool.
 
+![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
+
 ## Usage
 - Install the program
 - Go to File > Open
