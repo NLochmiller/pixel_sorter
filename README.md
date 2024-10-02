@@ -27,6 +27,8 @@ When the mouse cursor is over the original or sorted image, a small magnified vi
 ## Build Dependencies
 SDL2 and SDL2 image, while this uses DearImGui, those files are included in this repository
 
+Please note that for now, Windows is not supported. *I plan to add support in the future*
+
 
 ### License
 This project is licensed under the BSD 3-Clause License
