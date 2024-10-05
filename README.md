@@ -4,8 +4,8 @@ A graphics tool that modifies images by sorting pixels, leading to an interestin
 ![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
 
 ## How do you sort an image?
-Since sorting is generally done in a 1d format, and not 2d like images, the image is first cut into lines.
-All lines are parallel, spaced one pixel apart and have the same length.
+Since sorting is generally done in a 1d format, and not 2d like images, the image is first cut into lines such that each pixel is guaranteed to be along a single line.
+To achieve this, all lines are parallel, spaced one pixel apart and have the same length.
 This is achieved by making each line a copy of a line generated using [Bresenham's line algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm) at different offsets.
 If for each line we sort the pixels in that line, then we have sorted the image.
 
