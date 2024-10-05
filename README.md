@@ -7,15 +7,15 @@ A graphics tool that modifies images by sorting pixels, leading to an interestin
 Since sorting is generally done in a 1d format, and not 2d images, we must convert the image into 1d arrays.
 The image is first cut into lines such that each pixel is guaranteed to be along a single line (This is the line the angle controls refer to).
 This requires that all lines are parallel, and that the lines are spaced just far apart from each other to have each pixel only be along 1 line.
-This is achieved by making each line a copy of a line generated using [Bresenham's line algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm) at different offsets (spaced one pixel apart from each other) from a fixed spot on the image.
-If for each line we sort the pixels in that line, then we have sorted the image.
+
 To achieve this, all lines must be parallel, have no overlap, and when all lines are combined, cover every pixel in the image.
+This is achieved by making each line a copy of a line generated using [Bresenham's line algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm) at different offsets (spaced one pixel apart from each other) from a fixed spot on the image.
+If for each line we sort the pixels along that line, then we have sorted the image.
 
 
-### How to sort pixels in a line
-> ***Note:*** “value range” refers to the user chosen range of values that should be sorted, which is [ Range Minimum, Range Maximum ].
-
-> See [Controls](#controls) for information on Range Minimum and Maximum. 
+### How to sort the pixels along a line
+> [!NOTE]
+> “value range” refers to the user chosen range of values that should be sorted, which is [ Range Minimum, Range Maximum ]. See [Controls](#controls) for information on Range Minimum and Maximum. 
 
 Each pixel is converted to the value that the user chose *(for example, red)*. 
 Then the line will be scanned, ignoring any pixels that are outside the value range, until a section of the line is found that is a contiguous set of values that are inside the value range, which is referred to as a span.
@@ -47,7 +47,8 @@ When the mouse cursor is over the original or sorted image, a small magnified vi
 ## Build Dependencies
 SDL2 and SDL2 image, while this uses DearImGui, those files are included in this repository
 
-Please note that for now, Windows is not supported. *I plan to add support in the future*
+> [!Caution]
+> For now Windows is not supported. *I plan to add support in the future*
 
 ### License
 This project is licensed under the BSD 3-Clause License
