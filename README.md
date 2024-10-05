@@ -1,7 +1,25 @@
 # Pixel Sorter
-A graphics tool that modifies images by sorting images, leading to an interesting 'glitchy' blur like effect.
+A graphics tool that modifies images by sorting pixels, leading to an interesting 'glitchy' blur like effect.
 
 ![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
+
+## How do you sort an image?
+Since sorting is generally done in a 1d format, and not 2d like images, the image is first cut into lines.
+All lines are parallel, spaced one pixel apart and have the same length.
+This is achieved by making each line a copy of a line generated using [Bresenham's line algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm) at different offsets.
+If for each line we sort the pixels in that line, then we have sorted the image.
+
+
+### How to sort pixels in a line
+> ***Note:*** “value range” refers to the user chosen range of values that should be sorted, which is [ Range Minimum, Range Maximum ].
+
+> See [Controls](#controls) for information on Range Minimum and Maximum. 
+
+Each pixel is converted to the value that the user chose *(for example, red)*. 
+Then the line will be scanned, ignoring any pixels that are outside the value range, until a section of the line is found that is a contiguous set of values that are inside the value range, which is referred to as a span.
+
+The span is essentially a 1d array, and will then be sorted by value, utilizing counting sort.
+The process is repeated for each span in the line, until all spans are sorted, and thus all pixels along the line are sorted.
 
 ## Usage
 - Install the program
@@ -28,7 +46,6 @@ When the mouse cursor is over the original or sorted image, a small magnified vi
 SDL2 and SDL2 image, while this uses DearImGui, those files are included in this repository
 
 Please note that for now, Windows is not supported. *I plan to add support in the future*
-
 
 ### License
 This project is licensed under the BSD 3-Clause License
