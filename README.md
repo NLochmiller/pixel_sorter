@@ -1,14 +1,11 @@
 # Pixel Sorter
 A graphics tool that modifies images by sorting pixels, leading to an interesting 'glitchy' blur like effect.
+
+> If you cannot see the effect in this image, see the included a [before and after](#comparison-of-before-and-after-sorting).
+
+
 ![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
 
-
-## Before and after sorting
-<!-- The effect is not always immediatly visible, so having a comparison like this is very helpful -->
-### Unsorted
-![View of mountain, unsorted](docs/mountain_small_unsorted.png)
-### Sorted
-![View of mountain, sorted](docs/mountain_small_sorted.png)
 
 
 ## How do you sort an image?
@@ -29,6 +26,17 @@ Then the line will be scanned, ignoring any pixels that are outside the value ra
 
 The span is essentially a 1d array, and will then be sorted by value, utilizing counting sort.
 The process is repeated for each span in the line, until all spans are sorted, and thus all pixels along the line are sorted.
+
+
+<!-- The effect is not always immediatly visible, so having a comparison like this is very helpful -->
+## Comparison of before and after sorting
+Notice how the sides of the mountain in the sorted image are blured, that is due to the pixels being sorted. 
+> If you want more to look at more before and afters, see [the documents folder](docs) in this repository.
+### Unsorted
+![View of mountain, unsorted](docs/mountain_small_unsorted.png)
+### Sorted
+![View of mountain, sorted](docs/mountain_small_sorted.png)
+
 
 
 ## Usage
