@@ -9,7 +9,6 @@ The image is first cut into lines such that each pixel is guaranteed to be along
 This requires that all lines are parallel, and that the lines are spaced just far apart from each other to have each pixel only be along 1 line.
 This is achieved by making each line a copy of a line generated using [Bresenham's line algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm) at different offsets (spaced one pixel apart from each other) from a fixed spot on the image.
 If for each line we sort the pixels in that line, then we have sorted the image.
-
 To achieve this, all lines must be parallel, have no overlap, and when all lines are combined, cover every pixel in the image.
 
 
