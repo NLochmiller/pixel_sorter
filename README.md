@@ -1,7 +1,15 @@
 # Pixel Sorter
 A graphics tool that modifies images by sorting pixels, leading to an interesting 'glitchy' blur like effect.
-
 ![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
+
+
+## Before and after sorting
+<!-- The effect is not always immediatly visible, so having a comparison like this is very helpful -->
+### Unsorted
+![View of mountain, unsorted](docs/mountain_small_unsorted.png)
+### Sorted
+![View of mountain, sorted](docs/mountain_small_sorted.png)
+
 
 ## How do you sort an image?
 Since sorting is generally done in a 1d format, and not 2d images, we must convert the image into 1d arrays.
@@ -11,7 +19,6 @@ This requires that all lines are parallel, and that the lines are spaced just fa
 To achieve this, all lines must be parallel, have no overlap, and when all lines are combined, cover every pixel in the image.
 This is achieved by making each line a copy of a line generated using [Bresenham's line algorithm](https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm) at different offsets (spaced one pixel apart from each other) from a fixed spot on the image.
 If for each line we sort the pixels along that line, then we have sorted the image.
-
 
 ### How to sort the pixels along a line
 > [!NOTE]
@@ -23,6 +30,7 @@ Then the line will be scanned, ignoring any pixels that are outside the value ra
 The span is essentially a 1d array, and will then be sorted by value, utilizing counting sort.
 The process is repeated for each span in the line, until all spans are sorted, and thus all pixels along the line are sorted.
 
+
 ## Usage
 - Install the program
 - Go to File > Open
@@ -30,6 +38,7 @@ The process is repeated for each span in the line, until all spans are sorted, a
 - Modify sort settings
 - Press the "Sort" Button
 - Once you are happy with the results go to File > Export as and choose what you want the sorted image to be saved as (currently only exports to the png format)
+
 
 ## Controls
 *All controls have tool tips when the cursor hovers over them.*
@@ -50,5 +59,6 @@ SDL2 and SDL2 image, while this uses DearImGui, those files are included in this
 > [!Caution]
 > For now Windows is not supported. *I plan to add support in the future*
 
-### License
+
+## License
 This project is licensed under the BSD 3-Clause License
