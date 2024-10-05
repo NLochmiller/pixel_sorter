@@ -49,7 +49,8 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 
 
 ## Controls
-*All controls have tool tips when the cursor hovers over them.*
+> [!TIP]
+> All controls have tool tips when the cursor hovers over them.
 ### Sorting
 - Value: What value of each pixel should be sorted, including Hue, Saturation, and Value.
 - Range Minimum: Choose the minimum value that will be sorted
