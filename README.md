@@ -1,7 +1,7 @@
 # Pixel Sorter
 A graphics tool that modifies images by sorting pixels, leading to an interesting 'glitchy' blur like effect.
 
-> If you cannot see the effect in this image, see the included a [before and after](#comparison-of-before-and-after-sorting).
+> If you cannot see the effect in this image, see the included [before and after](#comparison-of-before-and-after-sorting).
 
 
 ![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
