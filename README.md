@@ -1,11 +1,8 @@
 # Pixel Sorter
 A graphics tool that modifies images by sorting pixels, leading to an interesting 'glitchy' blur like effect.
-
 > If you cannot see the effect in this image, see the included [before and after](#comparison-of-before-and-after-sorting).
 
-
 ![An example image, a mountain lit by a sunrise or sunset, having been sorted by the pixel sorter](docs/mountain_sorted.png)
-
 
 
 ## How do you sort an image?
@@ -38,7 +35,6 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 ![View of mountain, sorted](docs/mountain_small_sorted.png)
 
 
-
 ## Usage
 - Install the program
 - Go to File > Open
@@ -46,6 +42,19 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 - Modify sort settings
 - Press the "Sort" Button
 - Once you are happy with the results go to File > Export as and choose what you want the sorted image to be saved as (currently only exports to the png format)
+
+
+## Build Dependencies
+> [!Caution]
+> Curently, this only targets linux. *Windows support is planned, there are no plans to support Mac*
+
+- [SDL2](https://wiki.libsdl.org/SDL2/FrontPage) *Version 2.0.17+ of SDL2 is* ***required,*** *as the SDL2 backend for DearImGui requires it*
+- [SDL2 image](https://wiki.libsdl.org/SDL2_image/FrontPage)
+
+### Used but included in the code.
+> There is no need to download these. The source code needed is contained in [the libraries folder](libs)
+- [DearImGui](https://github.com/ocornut/imgui)
+- [imgui-filebrowser](https://github.com/AirGuanZ/imgui-filebrowser)
 
 
 ## Controls
@@ -61,12 +70,6 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 When the mouse cursor is over the original or sorted image, a small magnified view of the image will show up, with the view centered on the cursor.
 - Pixels: The width and height of the zoomed in area are controlled by this.
 - Size: This controls the size of the popup on the screen.
-
-## Build Dependencies
-SDL2 and SDL2 image, while this uses DearImGui, those files are included in this repository
-
-> [!Caution]
-> For now Windows is not supported. *I plan to add support in the future*
 
 
 ## License
