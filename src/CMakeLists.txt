@@ -1,4 +1,5 @@
 find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
+find_package(SDL2_image REQUIRED)
 add_library(sources ColorConversion.cpp ImGui_SDL2_helpers.cpp
   LineCollision.cpp main.cpp ImGui_ImageZoomable.cpp Knob.cpp
   LineInterpolator.cpp PixelSorter.cpp)
