@@ -1,0 +1,3 @@
+add_subdirectory(backend_sdlrenderer2)
+add_library(imgui INTERFACE)
+target_link_libraries(imgui INTERFACE imgui_sdlrenderer2)
