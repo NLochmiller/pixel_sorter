@@ -13,6 +13,8 @@ pkgs.mkShell
 
   shellHook = ''
     echo "Welcome to the SDL2 devlopment shell"
+    # Export SDL2_image path to expose it to cmake
+    export SDL2IMAGEDIR=${pkgs.SDL2_image.outPath}
     '';
 
 }
