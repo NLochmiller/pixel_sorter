@@ -1,4 +1,6 @@
-add_subdirectory(../imgui)
+if(NOT TARGET imgui)
+  add_subdirectory(../imgui imgui)
+endif()
 add_library(file_browser INTERFACE)
-target_include_directories(file_browser PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(file_browser INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(file_browser INTERFACE imgui)
