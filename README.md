@@ -36,7 +36,7 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 
 
 ## Usage
-- Install the program
+- Install/Build the program
 - Go to File > Open
 - Use the file manager to find a .png or .jpg file you want to sort
 - Modify sort settings
@@ -44,12 +44,24 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 - Once you are happy with the results go to File > Export as and choose what you want the sorted image to be saved as (currently only exports to the png format)
 
 
-## Build Dependencies
+## Building
 > [!Caution]
-> Curently, this only targets linux. *Windows support is planned, there are no plans to support Mac*
+> Curently this only targets linux. *Windows support is planned, there are no plans to support Mac*
 
-- [SDL2](https://wiki.libsdl.org/SDL2/FrontPage) *Version 2.0.17+ of SDL2 is* ***required,*** *as the SDL2 backend for DearImGui requires it*
-- [SDL2 image](https://wiki.libsdl.org/SDL2_image/FrontPage)
+### Prerequisites
+- [cmake](https://cmake.org/download/)
+- [SDL2](https://wiki.libsdl.org/SDL2/Installation) and SDL2_image must be installed (SDL2_image is installed similarly or along with SDL2).
+  - *Version 2.0.17+ of SDL2 is* ***required,*** *as the SDL2 backend for DearImGui requires it*
+> [!Tip]
+> If you are using nixos or the nix package manager, a flake.nix is provided that will fetch every required package.
+> You can temporarly install the packages by simply running `nix-shell` in the base directory of this git repo.
+
+## Linux
+Go into the build directory and enter these commands:\
+```
+cmake ..
+cmake --build . -j
+```
 
 ### Used but included in the code.
 > There is no need to download these. The source code needed is contained in [the libraries folder](libs)
@@ -60,6 +72,7 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 ## Controls
 > [!TIP]
 > All controls have tool tips when the cursor hovers over them.
+
 ### Sorting
 - Value: What value of each pixel should be sorted, including Hue, Saturation, and Value.
 - Range Minimum: Choose the minimum value that will be sorted
