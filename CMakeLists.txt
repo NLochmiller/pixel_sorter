@@ -10,7 +10,7 @@ find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
 find_package(SDL2_image REQUIRED)
 # Setup subdirectories, executable, and linking
-add_subdirectory(src libs)
+add_subdirectory(src external)
 add_executable(${CMAKE_PROJECT_NAME} src/main.cpp)
 if(TARGET SDL2::SDL2main)
   target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE SDL2::SDL2main)
