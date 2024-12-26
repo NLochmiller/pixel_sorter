@@ -1,7 +1,13 @@
 #include "LineCollision.hpp"
 #include "LineInterpolator.hpp"
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#include <windows.h>
+#endif
 #include <cmath>
 #include <cstdio>
+
+
 
 using LineCollision::point_doubles;
 using LineCollision::point_ints;

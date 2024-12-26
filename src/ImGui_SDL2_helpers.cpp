@@ -1,7 +1,11 @@
+#include <cstddef>
+#include <stdio.h>
+
 #include "ImGui_SDL2_helpers.hpp"
 #include "ImGui_ImageZoomable.hpp"
 #include "imgui.h"
 #include "imgui_impl_sdlrenderer2.h"
+#include "global.hpp"
 
 // Render the entire window
 void render(SDL_Renderer *renderer) {
@@ -97,7 +101,7 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface, uint width,
 
   SDL_Texture *texture_ptr = SDL_CreateTextureFromSurface(renderer, surface);
   if (texture_ptr == NULL) {
-    printf("Bad texture pointer");
+    fprintf(stderr, "Bad texture pointer");
     return false;
   }
 

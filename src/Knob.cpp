@@ -1,6 +1,13 @@
+#ifdef _WIN32
+#define NOMINMAX // Prevent windows from messing with std::min and std::max
+#include <windows.h>
+#define _USE_MATH_DEFINES
+#endif
+#include <cmath>
+#include <algorithm>
+
 #include "Knob.hpp"
 #include "imgui.h"
-#include <cmath>
 
 // Finds the angle from src to dest
 float findAngleDifference(ImVec2 src, ImVec2 dest) {

@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <sys/types.h>
+#include <cmath>
 
 // How many unique values can there be, also how precise are our values
 #define COUNT_T long
@@ -75,7 +76,8 @@ bool sortEachLine(PixelSorter_Pixel_t *&inputPixels,
   uint8_t r, g, b; // Individual color values, that will be used later
   // TODO: make a variable
 
-  PixelSorter_value_t values[width * height]; // pixelIndex to value
+  PixelSorter_value_t* values = (PixelSorter_value_t*) 
+      malloc(sizeof(PixelSorter_value_t) * width * height );// pixelIndex to value
   bool wasLastInBand = false;                 // if the last pixel was in a band
   // Conversion map from lineIndex to pixelIndex-
   int *pixelIndexes = (int *)calloc(numPoints, sizeof(int));

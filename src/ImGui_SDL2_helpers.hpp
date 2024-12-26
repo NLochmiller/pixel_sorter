@@ -6,6 +6,7 @@
 #define IMGUI_SDL2_HELPERS_HPP_
 
 #include "SDL_render.h"
+#include "global.hpp"
 
 // Render the entire window
 void render(SDL_Renderer *renderer);

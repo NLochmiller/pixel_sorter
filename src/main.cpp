@@ -5,6 +5,10 @@
 #include <cstdlib>
 #include <stdio.h>
 #include <string>
+#ifdef _WIN32
+#define NOMINMAX // Prevent windows from messing with std::min and std::max
+#include <windows.h>
+#endif
 
 #include "Knob.hpp"
 #include "SDL_pixels.h"
@@ -372,7 +376,7 @@ int main(int, char **) {
     // Process input file dialog
     inputFileDialog.Display();
     if (inputFileDialog.HasSelected()) {
-      inputSurface = IMG_Load(inputFileDialog.GetSelected().c_str());
+      inputSurface = IMG_Load(inputFileDialog.GetSelected().generic_string().c_str());
       if (inputSurface == NULL) {
         // TODO cancel file browser exit on error
         fprintf(stderr, "File %s does not exist\n",
@@ -401,7 +405,7 @@ int main(int, char **) {
     if (outputFileDialog.HasSelected()) {
       outputPath = outputFileDialog.GetSelected();
       if (outputSurface != NULL) {
-        IMG_SavePNG(outputSurface, outputPath.c_str());
+        IMG_SavePNG(outputSurface, outputPath.generic_string().c_str());
       } else {
         fprintf(stderr, "The output image does not exist! You must sort before "
                         "exporting!\n");
