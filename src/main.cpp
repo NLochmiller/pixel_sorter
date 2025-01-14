@@ -281,7 +281,7 @@ int main(int, char **) {
   SDL_WindowFlags window_flags =
       (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window *window =
-      SDL_CreateWindow("Pixel Sorter version " PROJECT_VERSION, SDL_WINDOWPOS_CENTERED,
+      SDL_CreateWindow("Pixel Sorter V" PROJECT_VERSION, SDL_WINDOWPOS_CENTERED,
                        SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
   if (window == nullptr) {
     fprintf(stderr, "Error: SDL_CreateWindow(): %s\n", SDL_GetError());

@@ -1,7 +1,7 @@
 # Configure the version header
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
-    ${CMAKE_CURRENT_SOURCE_DIR}/version.h
+    ${CMAKE_GENERATED_H_DIR}/version.h
 )
 
 find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
@@ -10,7 +10,9 @@ add_library(sources ColorConversion.cpp ImGui_SDL2_helpers.cpp
   LineCollision.cpp main.cpp ImGui_ImageZoomable.cpp Knob.cpp
   LineInterpolator.cpp PixelSorter.cpp)
 add_subdirectory(../external external)
-target_include_directories(sources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(sources PUBLIC ${CMAKE_CURRENT_SOURCE_DIR} PUBLIC ${CMAKE_GENERATED_H_DIR})
+# Do this to include the cmake generated headers
+target_include_directories(sources PUBLIC)
 if (WIN32)
   target_link_libraries(sources external SDL2::SDL2 SDL2_image::SDL2_image)
 else()
