@@ -4,6 +4,10 @@ project(PixelSorter VERSION 1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+# Change to wherever the final executable is outputed.
+# Only used for windows
+set(EXE_OUTPUT_FOLDER "${CMAKE_BINARY_DIR}\\Debug")
+
 # Require SDL2
 # Find sdl2
 set(CMAKE_PROJECT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
@@ -36,11 +40,11 @@ target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC
 if (WIN32)
     # Support both 32 and 64 bit builds
     if (${CMAKE_SIZEOF_VOID_P} MATCHES 8)
-        configure_file("${SDL2_DIR}\\..\\lib\\x64\\SDL2.dll" "${CMAKE_BINARY_DIR}\\Debug\\SDL2.dll" COPYONLY)
-        configure_file("${SDL2_image_DIR}\\..\\lib\\x64\\SDL2_image.dll" "${CMAKE_BINARY_DIR}\\Debug\\SDL2_image.dll" COPYONLY)
+        configure_file("${SDL2_DIR}\\..\\lib\\x64\\SDL2.dll" "${EXE_OUTPUT_FOLDER}\\SDL2.dll" COPYONLY)
+        configure_file("${SDL2_image_DIR}\\..\\lib\\x64\\SDL2_image.dll" "${EXE_OUTPUT_FOLDER}\\SDL2_image.dll" COPYONLY)
     else ()
-        configure_file("${SDL2_DIR}\\..\\lib\\x86\\SDL2.dll" "${CMAKE_BINARY_DIR}\\Debug\\SDL2.dll" COPYONLY)
-        configure_file("${SDL2_image_DIR}\\..\\lib\\x86\\SDL2_image.dll" "${CMAKE_BINARY_DIR}\\Debug\\SDL2_image.dll" COPYONLY)
+        configure_file("${SDL2_DIR}\\..\\lib\\x86\\SDL2.dll" "${EXE_OUTPUT_FOLDER}\\SDL2.dll" COPYONLY)
+        configure_file("${SDL2_image_DIR}\\..\\lib\\x86\\SDL2_image.dll" "${EXE_OUTPUT_FOLDER}\\SDL2_image.dll" COPYONLY)
     endif ()
 endif ()
 

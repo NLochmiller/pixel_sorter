@@ -125,6 +125,28 @@ cmake ..
 cmake --build .
 ```
 
+### Fix for "The code execution cannot proceed because *.dll was not found" error
+The SDL2.dll and SDL2_image.dll must be in the folder that the executable is located in.
+To fix this change the `EXE_OUTPUT_FOLDER` to whatever folder the exe is being output to.
+
+> [!Tip]
+> ${CMAKE_BINARY_DIR} is a cmake variable that is equivalent to the folder you are building in.
+> I recommend setting `EXE_OUTPUT_FOLDER` to be relative to this folder.
+
+1. Go to [.\CMakeLists.txt](./CMakeLists.txt) and finding the following on line 9
+```
+set(EXE_OUTPUT_FOLDER "${CMAKE_BINARY_DIR}\\Debug")
+```
+
+2. Change the final part from `Debug` to the relative path to the folder your exe is being built into.
+3. Run the build commands again
+
+For example, if the executable ends up in `.\build\Release` we should change the line to be
+```
+set(EXE_OUTPUT_FOLDER "${CMAKE_BINARY_DIR}\\Release")
+```
+
+
 
 # Controls
 > [!TIP]
