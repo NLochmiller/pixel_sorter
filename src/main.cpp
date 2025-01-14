@@ -15,8 +15,7 @@
 #include "SDL_render.h"
 #include "SDL_surface.h"
 
-// Enable math operators for imgui
-#define IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS // Enable math operators for imgui
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -32,6 +31,7 @@
 #include "LineInterpolator.hpp"
 #include "PixelSorter.hpp"
 #include "global.hpp"
+#include "version.h"
 
 #if !SDL_VERSION_ATLEAST(2, 0, 17)
 #error DearImGUI backend requires SDL 2.0.17+ because of SDL_RenderGeometry()
@@ -281,7 +281,7 @@ int main(int, char **) {
   SDL_WindowFlags window_flags =
       (SDL_WindowFlags)(SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
   SDL_Window *window =
-      SDL_CreateWindow("Pixel Sorter", SDL_WINDOWPOS_CENTERED,
+      SDL_CreateWindow("Pixel Sorter version " PROJECT_VERSION, SDL_WINDOWPOS_CENTERED,
                        SDL_WINDOWPOS_CENTERED, 1280, 720, window_flags);
   if (window == nullptr) {
     fprintf(stderr, "Error: SDL_CreateWindow(): %s\n", SDL_GetError());

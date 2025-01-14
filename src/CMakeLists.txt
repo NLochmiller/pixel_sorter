@@ -1,3 +1,9 @@
+# Configure the version header
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in
+    ${CMAKE_CURRENT_SOURCE_DIR}/version.h
+)
+
 find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
 find_package(SDL2_image REQUIRED)
 add_library(sources ColorConversion.cpp ImGui_SDL2_helpers.cpp
