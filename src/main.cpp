@@ -380,7 +380,7 @@ int main(int, char **) {
       if (inputSurface == NULL) {
         // TODO cancel file browser exit on error
         fprintf(stderr, "File %s does not exist\n",
-                inputFileDialog.GetSelected().c_str());
+                inputFileDialog.GetSelected().generic_string().c_str());
       } else {
         // Immediately convert to the basic format
         inputSurface = SDL_ConvertSurfaceFormat_MemSafe(inputSurface,
