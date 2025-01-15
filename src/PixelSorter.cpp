@@ -118,7 +118,7 @@ bool sortEachLine(PixelSorter_Pixel_t *&inputPixels,
     PixelSorter_Pixel_t pixel = inputPixels[pixelIndex];
     SDL_GetRGB(pixel, format, &r, &g, &b);
     // Divide by 255 to fit into the 0 to 1 range expected by converters
-    PixelSorter_value_t percent = std::round(
+    PixelSorter_value_t percent = (PixelSorter_value_t) std::round(
         PRECISION * converter(((double)r) / 255.0, ((double)g) / 255.0,
                               ((double)b) / 255.0));
     if (percent < 0 || percent > PRECISION) { // Sanity check
@@ -211,15 +211,20 @@ void PixelSorter::sort(PixelSorter_Pixel_t *&inputPixels,
   for (*l = minL; *l < maxL && !endedInBounds; (*l)++) {
     endedInBounds =
         sortEachLine(inputPixels, outputPixels, points, numPoints, width,
-                     height, deltaX, deltaY, x, y, valueMin * PRECISION,
-                     valueMax * PRECISION, converter, format);
+                     height, deltaX, deltaY, x, y, 
+                     (int) (valueMin * PRECISION), 
+                     (int) (valueMax * PRECISION),
+                      converter, format);
   }
 
   // For each line along l, increase it by 1
   for (; *l < maxL && endedInBounds; (*l)++) {
     endedInBounds =
         sortEachLine(inputPixels, outputPixels, points, numPoints, width,
-                     height, deltaX, deltaY, x, y, valueMin * PRECISION,
-                     valueMax * PRECISION, converter, format);
+                     height, deltaX, deltaY, x, y, 
+                     (int) (valueMin * PRECISION),
+                     (int) (valueMax * PRECISION), 
+                     converter, format);
   }
+  // We have run into an empty line or the end of the image. sorting complete
 }
