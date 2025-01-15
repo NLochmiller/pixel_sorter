@@ -38,7 +38,7 @@ bool displayTexture(SDL_Renderer *renderer, SDL_Texture *texture, uint width,
     }
   }
 
-  ImGui::Image((void *)texture, ImVec2(width, height));
+  ImGui::Image((void *)texture, iImVec2(width, height));
   return true;
 }
 
@@ -59,7 +59,7 @@ bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
     }
   }
 
-  ImGui::ImageZoomable((void *)texture, ImVec2(width, height), previewNum,
+  ImGui::ImageZoomable((void *)texture, iImVec2(width, height), previewNum,
                        previewSize);
   return true;
 }
@@ -86,8 +86,9 @@ bool displayTextureZoomable(SDL_Renderer *renderer, SDL_Texture *texture,
       dheight = textureHeight;
     }
   }
-  ImGui::ImageZoomable((void *)texture, ImVec2(width, height),
-                       ImVec2(dwidth, dheight), previewNum, previewSize);
+  ImGui::ImageZoomable((void *)texture, iImVec2(width, height),
+                       iImVec2(dwidth, dheight), previewNum,
+                       previewSize);
   return true;
 }
 
@@ -113,7 +114,7 @@ bool displaySurface(SDL_Renderer *renderer, SDL_Surface *surface, uint width,
     height = surface->h;
   }
 
-  ImGui::Image((void *)texture_ptr, ImVec2(width, height));
+  ImGui::Image((void *)texture_ptr, iImVec2(width, height));
   return true;
 }
 
