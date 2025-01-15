@@ -14,8 +14,11 @@ float findAngleDifference(ImVec2 src, ImVec2 dest) {
   return (float)atan2(dest.y - src.y, dest.x - src.x);
 }
 
-//
-
+// Create a knob, with a text label.
+// Label determines what text is placed next to the knob
+// angle points to the float that the knob will update with its current value
+// radius determines the radius of the knob in pixels
+// Returns if the value of the knob has changed
 bool ImGui::Knob(const char *label, float *angle, float radius) {
   bool has_value_changed = false;
 
@@ -42,7 +45,7 @@ bool ImGui::Knob(const char *label, float *angle, float radius) {
     *angle = findAngleDifference(center, mouse_pos);
     // Adjust to always be positive
     if (*angle < 0) {
-      *angle = 2 * M_PI + *angle;
+      *angle = (float)(2 * M_PI) + *angle;
     }
     has_value_changed = true;
   }
@@ -61,7 +64,7 @@ bool ImGui::Knob(const char *label, float *angle, float radius) {
 
   /* Draw indicator */
   int internal_radius = std::max(1, (int)radius / 5);
-  int indicator_thickness = std::max(2, (int)radius / 25);
+  float indicator_thickness = (float) std::max(2, (int)radius / 25);
   int indicator_padding = std::max(1, (int)radius / 6);
 
   ImU32 indicator_color = ImGui::GetColorU32(ImGuiCol_Text);
