@@ -541,7 +541,6 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       const static float low_rd = 0.0f;     // low value for radians & degrees
       const static float high_d = 360;      // High value for degrees
-      const static float high_r = (float) (2 * M_PI); // High value for radians
       std::string tooltip = "This controls the angle of the line that the "
                             "pixels of the image are sorted along.";
 
