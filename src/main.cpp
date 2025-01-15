@@ -146,7 +146,8 @@ void displayTiledZoomableImages(const ImGuiViewport *viewport,
     // Display input image zoomed in to percent
     if (inputTexture != NULL) {
       // We have an image, display it
-      ImVec2 input_image_scale = ImVec2(inputSurface->w, inputSurface->h);
+      ImVec2 input_image_scale = ImVec2((float) inputSurface->w, 
+                                        (float) inputSurface->h);
       ImVec2 original_size = max_images_area; // To restore later
 
       /* Calculate size for the horizontal layout */
@@ -174,8 +175,9 @@ void displayTiledZoomableImages(const ImGuiViewport *viewport,
     /* Display images */
     if (inputSurface != NULL) {
       displayTextureZoomable(renderer, inputTexture, inputSurface->w,
-                             inputSurface->h, display.x, display.y,
-                             magnifier_pixels, magnifier_size);
+                             inputSurface->h, (uint) display.x, 
+                             (uint) display.y, magnifier_pixels,
+                             magnifier_size);
     }
 
     // Display vertical aspect images on the same line
@@ -186,8 +188,9 @@ void displayTiledZoomableImages(const ImGuiViewport *viewport,
     // Display output image zoomed in to percent
     if (outputTexture != NULL) {
       displayTextureZoomable(renderer, outputTexture, outputSurface->w,
-                             outputSurface->h, display.x, display.y,
-                             magnifier_pixels, magnifier_size);
+                             outputSurface->h, (uint) display.x, 
+                             (uint) display.y, magnifier_pixels, 
+                             magnifier_size);
     }
   }
   ImGui::EndChild();
@@ -209,7 +212,7 @@ bool sort_wrapper(SDL_Renderer *renderer, SDL_Surface *&inputSurface,
   BresenhamsArguments bresenhamsArgs(0, 0);
   pointQueue pointQueue = LineCollision::generateLineQueueForRect(
       angle, inputSurface->w, inputSurface->h, bresenhamsArgs);
-  int numPoints = pointQueue.size();
+  int numPoints = (int) pointQueue.size();
 
   // Convert point queue to array of points
   point_ints *points =
@@ -482,8 +485,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
       static int selected_index = 7; // TODO: Use lightness as default
       /* Pixel quantizer selection */
       {
-        static const int quantizers_count = arrayLen(quantizer_options);
-
+        static const int quantizers_count = (int) arrayLen(quantizer_options);
         // Pass in the preview value visible before opening the combo
         const char *preview_value =
             quantizer_options[selected_index].name.c_str();
@@ -539,7 +541,7 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       const static float low_rd = 0.0f;     // low value for radians & degrees
       const static float high_d = 360;      // High value for degrees
-      const static float high_r = 2 * M_PI; // High value for radians
+      const static float high_r = (float) (2 * M_PI); // High value for radians
       std::string tooltip = "This controls the angle of the line that the "
                             "pixels of the image are sorted along.";
 
@@ -549,11 +551,10 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
 
       float knob_radius = std::min(viewport->WorkSize.x, viewport->WorkSize.y) /
                           (2 * knob_scale);
-      float knob_angle = DEG_TO_RAD(angle);
+      float knob_angle = (float) DEG_TO_RAD(angle);
       if (ImGui::Knob("##Sort angle knob", &knob_angle, knob_radius)) {
         // Knob has caused a change, update the angle
-        angle = RAD_TO_DEG(knob_angle);
-        std::clamp(angle, low_rd, high_r);
+        angle = (float) RAD_TO_DEG(knob_angle);
       }
       ImGui::SetItemTooltip("%s", tooltip.c_str());
 
@@ -565,7 +566,6 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         // There has been a change. Change the angle to repersent this
         // change in the display angle
         angle = (360 - displayAngle);
-        std::clamp(angle, low_rd, high_d);
       }
       ImGui::SetItemTooltip("%s\nControl Left click to enter an angle.",
                             tooltip.c_str());
@@ -583,8 +583,8 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
     static int minDimension = 100;
     static int magnifier_pixels = 8;
     // How much of the min dimension the preview size can take up
-    const static float magnifier_preview_max_scale = 0.2;
-    static int magnifier_preview_size =
+    const static float magnifier_preview_max_scale = 0.2f;
+    static int magnifier_preview_size = (int)
         round((std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
                magnifier_preview_max_scale));
     /*
@@ -616,10 +616,9 @@ int mainWindow(const ImGuiViewport *viewport, SDL_Renderer *renderer,
         ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x);
         ImGui::SliderInt(
             "##MagnifierPreviewSize", &magnifier_preview_size, 1,
-            round(std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
+            (int) round(std::min(viewport->WorkSize.x, viewport->WorkSize.y) *
                   magnifier_preview_max_scale),
             "Size: %d");
-
         ImGui::SetItemTooltip(
             "The size of the magnified section of the image on your "
             "screen.\nControl Left click to enter a value.");
