@@ -6,6 +6,12 @@
 #define IMGUI_SDL2_HELPERS_HPP_
 
 #include "SDL_render.h"
+#include "global.hpp"
+
+// Convenience function so that I dont have to type convert to float constantly
+#ifndef iImVec2
+#define iImVec2(_a_, _b_) ImVec2((float) _a_, (float) _b_)
+#endif
 
 // Render the entire window
 void render(SDL_Renderer *renderer);
