@@ -35,8 +35,9 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 ![View of mountain, sorted](docs/mountain_small_sorted.png)
 
 
-## Usage
-- Install the program
+
+# Usage
+- Install/Build the program
 - Go to File > Open
 - Use the file manager to find a .png or .jpg file you want to sort
 - Modify sort settings
@@ -44,23 +45,114 @@ Notice how the sides of the mountain in the sorted image are blured, that is due
 - Once you are happy with the results go to File > Export as and choose what you want the sorted image to be saved as (currently only exports to the png format)
 
 
-## Build Dependencies
+
+# Building
+<!-- This top level of building looks chunky & clunky. TODO: Revise it -->
 > [!Caution]
-> Curently, this only targets linux. *Windows support is planned, there are no plans to support Mac*
+> This project was designed and tested only on/for Linux and Windows.
 
-- [SDL2](https://wiki.libsdl.org/SDL2/FrontPage) *Version 2.0.17+ of SDL2 is* ***required,*** *as the SDL2 backend for DearImGui requires it*
-- [SDL2 image](https://wiki.libsdl.org/SDL2_image/FrontPage)
+Make sure that you have [cmake](https://cmake.org/download/) installed.
+For convenience, a empty [build directory](./build) is provided.
 
-### Used but included in the code.
-> There is no need to download these. The source code needed is contained in [the libraries folder](libs)
-- [DearImGui](https://github.com/ocornut/imgui)
-- [imgui-filebrowser](https://github.com/AirGuanZ/imgui-filebrowser)
+> If you want to change the version of SDL2, version 2.0.17 or higher of SDL2 is ***required***
+
+## Linux
+### 1. Install required packages
+Using a package manager, install [SDL2](https://wiki.libsdl.org/SDL2/Installation) along with [SDL2_image](https://wiki.libsdl.org/SDL2_image/FrontPage). 
+*If you install a developer package of SDL2, SDL2_image ****may**** be included.*
+
+<details>
+<summary>Debian based (includes Ubuntu)</summary>
+
+  This installs SDL2 and SDL2_image
+  ```
+  sudo apt-get install libsdl2-dev
+  ```
+    
+</details>
+<details>
+<summary>NixOS/nix</summary>
+  
+  A flake is provided for you in the base folder of this repository.
+  To use the flake simply enter the following while in the base folder.
+  ```
+  nix-shell
+  ```
+  
+</details>
+
+### 2. Run the build command
+From the build directory:
+```
+cmake ..
+cmake --build . -j
+```
 
 
-## Controls
+## Windows
+A local copy of [SDL2](./external/sdl/SDL2) *version 2.30.10* and [SDL2_image](./external/sdl/SDL2_image) *version 2.8.3* are included in this git repository.
+
+### (Optional) Change the version of SDL2 and/or SDL2_image
+<details>
+<summary>SDL2</summary>
+  
+  Version 2.0.17 or higher of SDL2 is ***required***
+  1. Locate the release for the version of SDL2 you want [here](https://github.com/libsdl-org/SDL/releases).
+  2. Download SDL2-devel-VERSION-COMPILER.zip from that release.
+   - For version 2.30.10 using Microsoft Visual Studio, you would download SDL2-devel-2.30.10-VC.zip
+  3. Extract the zip folder, and copy its contents into the local [SDL2 folder](./external/sdl/SDL2)
+
+</details>
+<details>
+<summary>SDL2_image</summary>
+  
+  1. Locate the release for the version of SDL2_image you want [here](https://github.com/libsdl-org/SDL_image/releases).
+  2. Download SDL2_image-devel-VERSION-COMPILER.zip from that release.
+   - For version 2.8.3 using Microsoft Visual Studio, you would download SDL2-devel-2.8.3-VC.zip
+  3. Extract the zip folder, and copy its contents into the local [SDL2_image folder](./external/sdl/SDL2_image)
+
+</details>
+
+### 1. Run the build command
+> [!Tip]
+> To open command prompt in the curent folder, click on the path in file explorer (it should be just below the menu). Replace the path with `cmd` and hit enter.
+>
+> You can do this for powershell as well by entering `powershell` instead of `cmd`
+
+In the build folder:
+```
+cmake ..
+cmake --build .
+```
+
+### Fix for "The code execution cannot proceed because *.dll was not found" error
+The SDL2.dll and SDL2_image.dll must be in the folder that the executable is located in.
+To fix this change the `EXE_OUTPUT_FOLDER` to whatever folder the exe is being output to.
+
+> [!Tip]
+> ${CMAKE_BINARY_DIR} is a cmake variable that is equivalent to the folder you are building in.
+> I recommend setting `EXE_OUTPUT_FOLDER` to be relative to this folder.
+
+1. Go to [.\CMakeLists.txt](./CMakeLists.txt) and finding the following on line 9
+```
+set(EXE_OUTPUT_FOLDER "${CMAKE_BINARY_DIR}\\Debug")
+```
+
+2. Change the final part from `Debug` to the relative path to the folder your exe is being built into.
+3. Run the build commands again
+
+For example, if the executable ends up in `.\build\Release` we should change the line to be
+```
+set(EXE_OUTPUT_FOLDER "${CMAKE_BINARY_DIR}\\Release")
+```
+
+
+
+# Controls
 > [!TIP]
 > All controls have tool tips when the cursor hovers over them.
-### Sorting
+
+### Sorting terminology
 - Value: What value of each pixel should be sorted, including Hue, Saturation, and Value.
 - Range Minimum: Choose the minimum value that will be sorted
 - Range Maximum: Choose the maximum value that will be sorted
@@ -72,5 +164,14 @@ When the mouse cursor is over the original or sorted image, a small magnified vi
 - Size: This controls the size of the popup on the screen.
 
 
-## License
+
+
+# Dependencies included.
+> There is no need to download these. The source code needed is contained in [the libraries folder](libs).
+- [DearImGui](https://github.com/ocornut/imgui)
+- [imgui-filebrowser](https://github.com/AirGuanZ/imgui-filebrowser)
+
+
+
+# License
 This project is licensed under the BSD 3-Clause License

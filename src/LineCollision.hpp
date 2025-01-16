@@ -4,6 +4,9 @@
 /*
  * Calculate the line that would collide with a given rectangle
  */
+#ifdef _WIN32
+#define _USE_MATH_DEFINES
+#endif
 #include "LineInterpolator.hpp"
 #include <queue>
 #include <utility>

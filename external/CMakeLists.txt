@@ -1,0 +1,8 @@
+if(NOT TARGET imgui)
+  add_subdirectory(imgui imgui)
+endif()
+if(NOT TARGET file_browser)
+  add_subdirectory(file_browser file_browser)
+endif()
+add_library(external INTERFACE)
+target_link_libraries(external INTERFACE imgui file_browser)
